@@ -113,7 +113,7 @@ Authorization: Bearer ${access_token}"
 Формат запроса:
 
 ```
-POST /api/user/orders HTTP/1.1
+POST /api/user/audiofile HTTP/1.1
 Content-Type: application/json
 ...
 {
@@ -149,7 +149,7 @@ Content-Type: application/json
 Формат запроса:
 
 ```
-GET /api/user/orders HTTP/1.1
+GET /api/user/audiofiles HTTP/1.1
 Content-Length: 0
 ```
 
@@ -192,21 +192,14 @@ Content-Length: 0
 
 #### **Получение текстового результата от ASR**
 
-Хендлер: `GET /api/user/textfile`.
+Хендлер: `GET /api/user/textfile/{id_file}`.
 
-Хендлер доступен только авторизованному пользователю. ID wav-файлов в выдаче должны быть отсортированы по времени загрузки от самых новых к самым старым. Формат даты — RFC3339.
-
-Доступные статусы обработки расчётов:
-
-- `NEW` — заказ загружен в систему, но не попал в обработку;
-- `PROCESSING` — происходит распознование;
-- `INVALID` — система ASR не смогла корректно обработать файл;
-- `PROCESSED` — данные по распознованию успешно получены.
+Хендлер доступен только авторизованному пользователю. ID реплик в выдаче должны быть отсортированы по времени возникновения от самых новых к самым старым. Формат даты — RFC3339.
 
 Формат запроса:
 
 ```
-GET /api/user/orders HTTP/1.1
+GET /api/user/textfile/123e4567-e89b-12d3-a456-426655440000 HTTP/1.1
 Content-Length: 0
 ```
 
@@ -223,23 +216,21 @@ Content-Length: 0
     
     [
         {
-            "id_file": "123e4567-e89b-12d3-a456-426655440000",
-            "file_name" : "rec 1",
-            "status": "PROCESSED",
-            "uploaded_at": "2020-12-10T15:15:45+03:00"
+            "channel" : 1,
+            "text" : "добрый день",
+            "uploaded_at": "2020-12-10T15:15:45:07+03:00"
         },
         {
-            "id_file": "345e4567-e89b-12d3-a456-426652340000",
-            "file_name" : "rec 2",
-            "status": "PROCESSING",
-            "uploaded_at": "2020-12-10T15:12:01+03:00"
+            "channel" : 2,
+            "text" : "здравствуйте",
+            "uploaded_at": "2020-12-10T15:15:45:17+03:00"
         },
-        {
-    	    "id_file": "765e4567-e89b-12d3-a456-426652340000",
-            "file_name" : "rec 3",
-            "status": "INVALID",
-            "uploaded_at": "2020-12-09T16:09:53+03:00"
-        }
+         {
+            "channel" : 1,
+            "text" : "у меня вопрос про мой остаток на счету",
+            "uploaded_at": "2020-12-10T15:15:45:21+03:00"
+        },
+    	...
     ]
     ```
 

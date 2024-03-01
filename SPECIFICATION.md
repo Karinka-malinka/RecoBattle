@@ -166,7 +166,7 @@ Content-Length: 0
     
     [
         {
-            "uuid": "6473e4567-e89b-12d3-a456-426655440000",
+            "uuid": "6663e4567-e89b-12d3-a456-426655440000",
             "id_file": "123e4567-e89b-12d3-a456-426655440000",
             "file_name" : "rec 1",
             "asr" : "yandexSpeachKit",
@@ -174,6 +174,7 @@ Content-Length: 0
             "uploaded_at": "2020-12-10T15:15:45+03:00"
         },
         {
+            "uuid": "8883e4567-e89b-12d3-a456-426655440000",
             "id_file": "123e4567-e89b-12d3-a456-426655440000",
             "file_name" : "rec 1",
             "asr" : "vosk",
@@ -181,6 +182,7 @@ Content-Length: 0
             "uploaded_at": "2020-12-10T15:12:01+03:00"
         },
         {
+            "uuid": "4444e4567-e89b-12d3-a456-426655440000",
             "id_file": "765e4567-e89b-12d3-a456-426652340000",
             "file_name" : "rec 2",
             "asr" : "3iTech",

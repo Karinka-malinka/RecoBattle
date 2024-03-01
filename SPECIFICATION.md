@@ -89,6 +89,7 @@ Content-Type: application/json
 Хендлер: `POST /api/user/login`.
 
 Аутентификация производится с помощью jwt
+
 Формат запроса:
 
 ```

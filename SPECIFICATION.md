@@ -97,6 +97,11 @@ POST /api/user/login HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer ${access_token}"
 ...
+
+{
+    "login": "<login>",
+    "password": "<password>"
+} 
 ```
 
 Возможные коды ответа:

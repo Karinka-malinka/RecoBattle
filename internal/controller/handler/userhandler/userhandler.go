@@ -6,7 +6,6 @@ import (
 
 	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/userapp"
-	"github.com/RecoBattle/internal/controller/router"
 	"github.com/RecoBattle/internal/database/userdb"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
@@ -26,10 +25,10 @@ func NewUserHandler(userapp *userapp.Users, cfg *config.ConfigData) *UserHandler
 	return &UserHandler{UserApp: userapp}
 }
 
-func (lh *UserHandler) RegisterHandler(e *echo.Echo, apiGroup *echo.Group) {
+func (lh *UserHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {
 
-	apiGroup.POST("/register", lh.Register)
-	apiGroup.POST("/login", lh.Login)
+	publicGroup.POST("/user/register", lh.Register)
+	publicGroup.POST("/user/login", lh.Login)
 
 }
 
@@ -45,7 +44,7 @@ func (lh *UserHandler) RegisterHandler(e *echo.Echo, apiGroup *echo.Group) {
 //	@Failure      400 {string} please check request struct
 //	@Failure      409 {string} login is busy
 //	@Failure      500 {string} internal server error
-//	@Router       /api/user/register [post]
+//	@Router       /api_public/user/register [post]
 //
 //	@Security JWT Token
 func (lh *UserHandler) Register(c echo.Context) error {
@@ -75,7 +74,7 @@ func (lh *UserHandler) Register(c echo.Context) error {
 
 	select {
 	case result := <-ca:
-		router.SendResponceToken(c, result)
+		SendResponceToken(c, result)
 		return c.String(http.StatusOK, "")
 	case err := <-errc:
 		var errConflict *userdb.ErrConflict
@@ -100,7 +99,7 @@ func (lh *UserHandler) Register(c echo.Context) error {
 //	@Failure      400 {string} please check request struct
 //	@Failure      401 {string} invalid username/password pair
 //	@Failure      500 {string} internal server error
-//	@Router       /api/user/register [post]
+//	@Router       /api_public/user/register [post]
 //
 //	@Security JWT Token
 func (lh *UserHandler) Login(c echo.Context) error {
@@ -130,7 +129,7 @@ func (lh *UserHandler) Login(c echo.Context) error {
 
 	select {
 	case result := <-ca:
-		router.SendResponceToken(c, result)
+		SendResponceToken(c, result)
 		return c.String(http.StatusOK, "")
 	case err := <-errc:
 
@@ -142,4 +141,38 @@ func (lh *UserHandler) Login(c echo.Context) error {
 		return nil
 	}
 
+}
+
+func SendResponceToken(c echo.Context, response *userapp.LoginResponse) {
+
+	c.Response().Header().Set("Authorization", "Bearer "+response.AccessToken)
+
+	writeAccessTokenCookie(c, response.AccessToken)
+	writeRefreshTokenCookie(c, response.RefreshToken)
+}
+
+func writeAccessTokenCookie(c echo.Context, accessToken string) {
+
+	cookie := new(http.Cookie)
+
+	cookie.Name = "access_token"
+	cookie.Value = accessToken
+	cookie.HttpOnly = true
+	cookie.SameSite = 3
+	cookie.Path = "/"
+
+	c.SetCookie(cookie)
+}
+
+func writeRefreshTokenCookie(c echo.Context, refreshToken string) {
+
+	cookie := new(http.Cookie)
+
+	cookie.Name = "refresh_token"
+	cookie.Value = refreshToken
+	cookie.HttpOnly = true
+	cookie.SameSite = 3
+	cookie.Path = "/"
+
+	c.SetCookie(cookie)
 }

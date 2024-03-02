@@ -7,18 +7,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/RecoBattle/cmd/config"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
-
-type JWTCustomClaims struct {
-	UserID uuid.UUID `json:"user_id"`
-	jwt.RegisteredClaims
-}
 
 type User struct {
 	UUID     uuid.UUID
@@ -28,17 +21,13 @@ type User struct {
 
 type UserStore interface {
 	Create(ctx context.Context, user User) error
-	Read(ctx context.Context, username string) (*User, error)
+	GetByName(ctx context.Context, username string) (*User, error)
+	GetByID(ctx context.Context, userID uuid.UUID) (*User, error)
 }
 
 type Users struct {
 	userStore UserStore
 	cfg       config.ApiServer
-}
-
-type LoginResponse struct {
-	AccessToken  string
-	RefreshToken string
 }
 
 func NewUser(userStore UserStore) *Users {
@@ -56,96 +45,42 @@ func (ua *Users) Register(ctx context.Context, cfg config.ApiServer, user User) 
 		return nil, err
 	}
 
-	resp, err := ua.newTokenPair(cfg, user)
+	accessToken, err := ua.newToken(user, cfg.AccessTokenExpiresAt, cfg.SecretKeyForAccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	refreshToken, err := ua.newToken(user, cfg.RefreshTokenExpiresAt, cfg.SecretKeyForRefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
 func (ua *Users) Login(ctx context.Context, cfg config.ApiServer, user User) (*LoginResponse, error) {
 
-	userInDB, err := ua.userStore.Read(ctx, user.Username)
+	userInDB, err := ua.userStore.GetByName(ctx, user.Username)
 
 	if err != nil {
-		return nil, errors.New("401")
+		return nil, err
 	}
 
 	if !ua.checkHash(user, userInDB.Password) {
 		return nil, errors.New("401")
 	}
 
-	resp, err := ua.newTokenPair(cfg, user)
+	accessToken, err := ua.newToken(user, cfg.AccessTokenExpiresAt, cfg.SecretKeyForAccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
-}
-
-func (ua *Users) newTokenPair(cfg config.ApiServer, user User) (*LoginResponse, error) {
-
-	accessToken, refreshToken := ua.getTokensWithClaims(cfg, user)
-
-	accessTokenString, err := accessToken.SignedString([]byte(cfg.SecretKeyForAccessToken))
+	refreshToken, err := ua.newToken(user, cfg.RefreshTokenExpiresAt, cfg.SecretKeyForRefreshToken)
 	if err != nil {
-		logrus.Errorf("error in signedString access token. error: %v", err)
-		return nil, err
-	}
-	refreshTokenString, err := refreshToken.SignedString([]byte(cfg.SecretKeyForRefreshToken))
-	if err != nil {
-		logrus.Errorf("error in signedString refresh token. error: %v", err)
 		return nil, err
 	}
 
-	return &LoginResponse{AccessToken: accessTokenString, RefreshToken: refreshTokenString}, nil
-}
-
-func (ua *Users) getTokensWithClaims(cfg config.ApiServer, user User) (accessToken *jwt.Token, refreshToken *jwt.Token) {
-
-	accessTokenClaims := &JWTCustomClaims{
-		UserID: user.UUID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * time.Duration(cfg.AccessTokenExpiresAt))),
-		},
-	}
-
-	refreshTokenClaims := &JWTCustomClaims{
-		UserID: user.UUID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * time.Duration(cfg.RefreshTokenExpiresAt))),
-		},
-	}
-
-	accessToken = jwt.NewWithClaims(jwt.SigningMethodHS256, accessTokenClaims)
-	refreshToken = jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
-
-	return accessToken, refreshToken
-}
-
-func (ua *Users) parseToken(tokenstr, secretKey string) (bool, *JWTCustomClaims, error) {
-
-	token, err := jwt.ParseWithClaims(tokenstr, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-		if !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-
-		return []byte(secretKey), nil
-
-	})
-
-	if err != nil {
-		if !errors.Is(err, jwt.ErrTokenExpired) {
-			logrus.Infof("error in parsing token. error: %v", err)
-			return false, nil, err
-		}
-	}
-
-	userClaims := token.Claims.(*JWTCustomClaims)
-
-	return token.Valid, userClaims, nil
+	return &LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
 func (ua *Users) checkHash(user User, userHash string) bool {

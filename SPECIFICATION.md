@@ -37,13 +37,13 @@
 
 Система сравнения сервисов ASR "RecoBattle" должна предоставлять следующие HTTP-хендлеры:
 
-* `POST /api/user/register` — регистрация пользователя;
-* `POST /api/user/login` — аутентификация пользователя;
-* `POST /api/user/audiofile` — загрузка пользователем wav-файла для распознавания;
-* `GET /api/user/audiofiles` — получение списка загруженных пользователем wav-файлов, статусов их обработки;
-* `GET /api/user/textfile/{uuid}` — получение текстового результата от ASR;
-* `POST /api/user/ideal` — загрузка эталонного текста разговора для оценки качества;
-* `GET /api/user/qualitycontrol/{id_file}` — получение информации о качестве распознавания.
+* `POST /api_public/user/register` — регистрация пользователя;
+* `POST /api_public/user/login` — аутентификация пользователя;
+* `POST /api_private/user/audiofile` — загрузка пользователем wav-файла для распознавания;
+* `GET /api_private/user/audiofiles` — получение списка загруженных пользователем wav-файлов, статусов их обработки;
+* `GET /api_private/user/textfile/{uuid}` — получение текстового результата от ASR;
+* `POST /api_private/user/ideal` — загрузка эталонного текста разговора для оценки качества;
+* `GET /api_private/user/qualitycontrol/{id_file}` — получение информации о качестве распознавания.
 
 ### Общие ограничения и требования
 
@@ -59,7 +59,7 @@
   
 #### **Регистрация пользователя**
 
-Хендлер: `POST /api/user/register`.
+Хендлер: `POST /api_public/user/register`.
 
 Регистрация производится по паре логин/пароль. Каждый логин должен быть уникальным.
 После успешной регистрации должна происходить автоматическая аутентификация пользователя.
@@ -67,7 +67,7 @@
 Формат запроса:
 
 ```
-POST /api/user/register HTTP/1.1
+POST /api_public/user/register HTTP/1.1
 Content-Type: application/json
 ...
 
@@ -86,14 +86,14 @@ Content-Type: application/json
 
 #### **Аутентификация пользователя**
 
-Хендлер: `POST /api/user/login`.
+Хендлер: `POST /api_public/user/login`.
 
 Аутентификация производится с помощью jwt
 
 Формат запроса:
 
 ```
-POST /api/user/login HTTP/1.1
+POST /api_public/user/login HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer ${access_token}"
 ...
@@ -113,13 +113,13 @@ Authorization: Bearer ${access_token}"
 
 #### **Загрузка пользователем wav-файла для распознавания**
 
-Хендлер: `POST /api/user/audiofile`.
+Хендлер: `POST /api_private/user/audiofile`.
 
 Хендлер доступен только аутентифицированным пользователям. 
 Формат запроса:
 
 ```
-POST /api/user/audiofile HTTP/1.1
+POST /api_private/user/audiofile HTTP/1.1
 Content-Type: application/json
 ...
 {
@@ -140,7 +140,7 @@ Content-Type: application/json
 
 #### **Получение списка загруженных пользователем wav-файлов**
 
-Хендлер: `GET /api/user/audiofiles`.
+Хендлер: `GET /api_private/user/audiofiles`.
 
 Хендлер доступен только авторизованному пользователю. ID wav-файлов в выдаче должны быть отсортированы по времени загрузки от самых новых к самым старым. Формат даты — RFC3339.
 
@@ -154,7 +154,7 @@ Content-Type: application/json
 Формат запроса:
 
 ```
-GET /api/user/audiofiles HTTP/1.1
+GET /api_private/user/audiofiles HTTP/1.1
 Content-Length: 0
 ```
 
@@ -203,14 +203,14 @@ Content-Length: 0
 
 #### **Получение текстового результата от ASR**
 
-Хендлер: `GET /api/user/textfile/{uuid}`.
+Хендлер: `GET /api_private/user/textfile/{uuid}`.
 
 Хендлер доступен только авторизованному пользователю. ID реплик в выдаче должны быть отсортированы по времени возникновения от самых новых к самым старым. Формат даты — RFC3339.
 
 Формат запроса:
 
 ```
-GET /api/user/textfile/6663e4567-e89b-12d3-a456-426655440000 HTTP/1.1
+GET /api_private/user/textfile/6663e4567-e89b-12d3-a456-426655440000 HTTP/1.1
 Content-Length: 0
 ```
 
@@ -251,7 +251,7 @@ Content-Length: 0
   
 #### **Загрузка эталонного текста разговора для оценки качества**
 
-Хендлер: `POST /api/user/ideal`.
+Хендлер: `POST /api_private/user/ideal`.
 
 Хендлер доступен только авторизованному пользователю. В ответе должны содержаться данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов.
 
@@ -278,14 +278,14 @@ Content-Type: application/json
 
 #### **Получение информации о качестве распознавания**
 
-Хендлер: `GET /api/user/qualitycontrol/{id_file}` 
+Хендлер: `GET /api_private/user/qualitycontrol/{id_file}` 
 
 Хендлер доступен только авторизованному пользователю.
 
 Формат запроса:
 
 ```
-GET /api/user/qualitycontrol/123e4567-e89b-12d3-a456-426655440000 HTTP/1.1
+GET /api_private/user/qualitycontrol/123e4567-e89b-12d3-a456-426655440000 HTTP/1.1
 Content-Length: 0
 ```
 

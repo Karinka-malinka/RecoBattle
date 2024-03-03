@@ -6,6 +6,13 @@ import (
 	"os/signal"
 
 	"github.com/RecoBattle/cmd/config"
+	"github.com/RecoBattle/internal/app/userapp"
+	"github.com/RecoBattle/internal/controller/handler"
+	"github.com/RecoBattle/internal/controller/handler/userhandler"
+	"github.com/RecoBattle/internal/controller/router"
+	"github.com/RecoBattle/internal/controller/server"
+	"github.com/RecoBattle/internal/database"
+	"github.com/RecoBattle/internal/database/userdb"
 	"github.com/RecoBattle/internal/logger"
 	"github.com/sirupsen/logrus"
 )
@@ -26,4 +33,30 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	defer cancel()
+
+	db, err := database.NewDB(ctx, cfg.DatabaseDSN)
+	if err != nil {
+		logrus.Fatalf("error in open database. error: %v", err)
+	}
+
+	var registeredHandlers []handler.Handler
+
+	//Init storage and services
+	userStore, err := userdb.NewUserStore(ctx, db.DB)
+	if err != nil {
+		logrus.Fatalf("error in creating user store table")
+	}
+	userApp := userapp.NewUser(userStore)
+
+	//Add Actions to Handlers to slice
+	userHandler := userhandler.NewUserHandler(userApp, &cnf.ApiServer)
+	registeredHandlers = append(registeredHandlers, userHandler)
+
+	appRouter := router.NewRouter(cnf.ApiServer, registeredHandlers)
+	appServer := server.NewServer(cfg.RunAddr, appRouter.Echo)
+
+	go appServer.Start(ctx)
+
+	<-ctx.Done()
+	appServer.Stop(ctx)
 }

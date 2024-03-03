@@ -6,10 +6,10 @@ import (
 
 type Cnf struct {
 	ApiServer ApiServer
-	YandexAsr yandexAsr
+	YandexAsr YandexAsr
 }
 
-type yandexAsr struct {
+type YandexAsr struct {
 	YandexFolderId  string
 	YandexKey       string
 	YandexAsrUri    string

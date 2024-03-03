@@ -21,8 +21,8 @@ type RegisterRequest struct {
 	Password string `json:"password" binding:"required" validate:"required"`
 }
 
-func NewUserHandler(userapp *userapp.Users, cfg *config.ConfigData) *UserHandler {
-	return &UserHandler{UserApp: userapp}
+func NewUserHandler(userapp *userapp.Users, cfg *config.ApiServer) *UserHandler {
+	return &UserHandler{UserApp: userapp, cfg: *cfg}
 }
 
 func (lh *UserHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {

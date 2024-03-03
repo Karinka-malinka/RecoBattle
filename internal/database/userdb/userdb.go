@@ -20,9 +20,20 @@ type UserStore struct {
 	db *sql.DB
 }
 
-func NewUserStore(db *sql.DB) *UserStore {
+func NewUserStore(ctx context.Context, db *sql.DB) (*UserStore, error) {
 
-	return &UserStore{db: db}
+	_, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS users (
+		"uuid" TEXT PRIMARY KEY,
+		"login" TEXT,
+		"hash_pass" TEXT,
+		UNIQUE (login)
+	  )`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserStore{db: db}, nil
 }
 
 func (d *UserStore) Create(ctx context.Context, user userapp.User) error {

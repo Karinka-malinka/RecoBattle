@@ -7,6 +7,7 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/RecoBattle/internal/app/userapp"
+	"github.com/RecoBattle/internal/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -50,7 +51,7 @@ func (d *UserStore) Create(ctx context.Context, user userapp.User) error {
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return NewErrorConflict(err)
+			return database.NewErrorConflict(err)
 		}
 
 		return err

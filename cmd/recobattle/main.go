@@ -6,12 +6,15 @@ import (
 	"os/signal"
 
 	"github.com/RecoBattle/cmd/config"
+	"github.com/RecoBattle/internal/app/audiofilesapp"
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/RecoBattle/internal/controller/handler"
+	"github.com/RecoBattle/internal/controller/handler/audiofileshandler"
 	"github.com/RecoBattle/internal/controller/handler/userhandler"
 	"github.com/RecoBattle/internal/controller/router"
 	"github.com/RecoBattle/internal/controller/server"
 	"github.com/RecoBattle/internal/database"
+	"github.com/RecoBattle/internal/database/audiofilesdb"
 	"github.com/RecoBattle/internal/database/userdb"
 	"github.com/RecoBattle/internal/logger"
 	"github.com/sirupsen/logrus"
@@ -48,9 +51,18 @@ func main() {
 	}
 	userApp := userapp.NewUser(userStore)
 
+	audiofileStore, err := audiofilesdb.NewAudioFileStore(ctx, db.DB)
+	if err != nil {
+		logrus.Fatalf("error in creating audiofile store table")
+	}
+	audiofilesApp := audiofilesapp.NewAudioFile(audiofileStore)
+
 	//Add Actions to Handlers to slice
-	userHandler := userhandler.NewUserHandler(userApp, &cnf.ApiServer)
+	userHandler := userhandler.NewUserHandler(userApp)
 	registeredHandlers = append(registeredHandlers, userHandler)
+
+	audiofilesHandler := audiofileshandler.NewAudioFilesHandler(audiofilesApp, cfg.PathFileStorage)
+	registeredHandlers = append(registeredHandlers, audiofilesHandler)
 
 	appRouter := router.NewRouter(cnf.ApiServer, registeredHandlers)
 	appServer := server.NewServer(cfg.RunAddr, appRouter.Echo)

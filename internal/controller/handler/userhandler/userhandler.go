@@ -4,25 +4,23 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/userapp"
-	"github.com/RecoBattle/internal/database/userdb"
+	"github.com/RecoBattle/internal/database"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
 
 type UserHandler struct {
 	UserApp *userapp.Users
-	cfg     config.ApiServer
 }
 
 type RegisterRequest struct {
-	Username string `json:"login" binding:"required" validate:"required"`
-	Password string `json:"password" binding:"required" validate:"required"`
+	Username string `json:"login" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
-func NewUserHandler(userapp *userapp.Users, cfg *config.ApiServer) *UserHandler {
-	return &UserHandler{UserApp: userapp, cfg: *cfg}
+func NewUserHandler(userapp *userapp.Users) *UserHandler {
+	return &UserHandler{UserApp: userapp}
 }
 
 func (lh *UserHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {
@@ -56,12 +54,17 @@ func (lh *UserHandler) Register(c echo.Context) error {
 	err := c.Bind(user)
 	if err != nil {
 		logrus.Errorf("error in bind register User request. error: %v", err)
-		return c.JSON(http.StatusBadRequest, "please check request struct")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(user); err != nil {
+		logrus.Errorf("error in bind register User request. error: %v", err)
+		return err
 	}
 
 	go func() error {
 
-		registerResult, err := lh.UserApp.Register(c.Request().Context(), lh.cfg, userapp.User{Username: user.Username, Password: user.Password})
+		registerResult, err := lh.UserApp.Register(c.Request().Context(), userapp.User{Username: user.Username, Password: user.Password})
 
 		if err != nil {
 			errc <- err
@@ -77,7 +80,7 @@ func (lh *UserHandler) Register(c echo.Context) error {
 		SendResponceToken(c, result)
 		return c.String(http.StatusOK, "")
 	case err := <-errc:
-		var errConflict *userdb.ErrConflict
+		var errConflict *database.ErrConflict
 		if errors.As(err, &errConflict) {
 			return c.String(http.StatusConflict, "")
 		}
@@ -111,12 +114,17 @@ func (lh *UserHandler) Login(c echo.Context) error {
 	err := c.Bind(user)
 	if err != nil {
 		logrus.Errorf("error in bind register User request. error: %v", err)
-		return c.JSON(http.StatusBadRequest, "please check request struct")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(user); err != nil {
+		logrus.Errorf("error in bind register User request. error: %v", err)
+		return err
 	}
 
 	go func() error {
 
-		registerResult, err := lh.UserApp.Login(c.Request().Context(), lh.cfg, userapp.User{Username: user.Username, Password: user.Password})
+		registerResult, err := lh.UserApp.Login(c.Request().Context(), userapp.User{Username: user.Username, Password: user.Password})
 
 		if err != nil {
 			errc <- err
@@ -132,7 +140,6 @@ func (lh *UserHandler) Login(c echo.Context) error {
 		SendResponceToken(c, result)
 		return c.String(http.StatusOK, "")
 	case err := <-errc:
-
 		if err.Error() == "401" {
 			return c.String(http.StatusUnauthorized, "invalid username/password pair")
 		}

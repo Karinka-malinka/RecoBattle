@@ -33,12 +33,12 @@ func (s *Server) Start(ctx context.Context) {
 
 	errs.Go(s.srv.ListenAndServe)
 
+	logrus.Infof("server started: %s", s.srv.Addr)
+
 	err := errs.Wait()
 	if err != nil {
 		logrus.Infof("message from server: %v", err)
 	}
-
-	logrus.Infof("server started: %s", s.srv.Addr)
 }
 
 func (s *Server) Stop(ctx context.Context) {

@@ -7,6 +7,7 @@ import (
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/RecoBattle/internal/controller/handler"
 	"github.com/RecoBattle/internal/controller/handler/userhandler"
+	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -18,22 +19,27 @@ type Router struct {
 	UserApp *userapp.Users
 }
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if err := cv.validator.Struct(i); err != nil {
+		// Optionally, you could return the error to give each route more control over the status code
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return nil
+}
+
 func NewRouter(cfg config.ApiServer, handlers []handler.Handler) *Router {
 
 	e := echo.New()
+	e.Validator = &CustomValidator{validator: validator.New()}
 
 	r := &Router{
 		Echo: e,
 	}
 
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogURI:          true,
-		LogStatus:       true,
-		LogMethod:       true,
-		LogResponseSize: true,
-		LogLatency:      true,
-		LogError:        true,
-	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.Decompress())
 	e.Use(middleware.Gzip())

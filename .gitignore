@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.wav
 
 # Test binary, built with `go test -c`
 *.test
@@ -19,7 +20,7 @@ cmd/recobattle/recobattle
 vendor/
 
 # Configuration files
-config/config.toml
+cmd/config/config.toml
 
 # IDEs directories
 .idea

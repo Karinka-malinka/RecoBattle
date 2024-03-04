@@ -27,7 +27,7 @@ type UserStore interface {
 
 type Users struct {
 	userStore UserStore
-	cfg       config.ApiServer
+	Cfg       config.ApiServer
 }
 
 func NewUser(userStore UserStore) *Users {
@@ -36,7 +36,7 @@ func NewUser(userStore UserStore) *Users {
 	}
 }
 
-func (ua *Users) Register(ctx context.Context, cfg config.ApiServer, user User) (*LoginResponse, error) {
+func (ua *Users) Register(ctx context.Context, user User) (*LoginResponse, error) {
 
 	user.UUID = uuid.New()
 	user.Password = hex.EncodeToString(ua.writeHash(user.Username, user.Password))
@@ -45,12 +45,12 @@ func (ua *Users) Register(ctx context.Context, cfg config.ApiServer, user User) 
 		return nil, err
 	}
 
-	accessToken, err := ua.newToken(user, cfg.AccessTokenExpiresAt, cfg.SecretKeyForAccessToken)
+	accessToken, err := ua.newToken(user, ua.Cfg.AccessTokenExpiresAt, ua.Cfg.SecretKeyForAccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := ua.newToken(user, cfg.RefreshTokenExpiresAt, cfg.SecretKeyForRefreshToken)
+	refreshToken, err := ua.newToken(user, ua.Cfg.RefreshTokenExpiresAt, ua.Cfg.SecretKeyForRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (ua *Users) Register(ctx context.Context, cfg config.ApiServer, user User) 
 	return &LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
-func (ua *Users) Login(ctx context.Context, cfg config.ApiServer, user User) (*LoginResponse, error) {
+func (ua *Users) Login(ctx context.Context, user User) (*LoginResponse, error) {
 
 	userInDB, err := ua.userStore.GetByName(ctx, user.Username)
 
@@ -70,12 +70,12 @@ func (ua *Users) Login(ctx context.Context, cfg config.ApiServer, user User) (*L
 		return nil, errors.New("401")
 	}
 
-	accessToken, err := ua.newToken(user, cfg.AccessTokenExpiresAt, cfg.SecretKeyForAccessToken)
+	accessToken, err := ua.newToken(user, ua.Cfg.AccessTokenExpiresAt, ua.Cfg.SecretKeyForAccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := ua.newToken(user, cfg.RefreshTokenExpiresAt, cfg.SecretKeyForRefreshToken)
+	refreshToken, err := ua.newToken(user, ua.Cfg.RefreshTokenExpiresAt, ua.Cfg.SecretKeyForRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +95,8 @@ func (ua *Users) checkHash(user User, userHash string) bool {
 }
 
 func (ua *Users) writeHash(username string, password string) []byte {
-	hash := hmac.New(sha256.New, []byte(ua.cfg.SecretKeyForHashingPassword))
-	hash.Write([]byte(fmt.Sprintf("%s:%s:%s", username, password, ua.cfg.SecretKeyForHashingPassword)))
+	hash := hmac.New(sha256.New, []byte(ua.Cfg.SecretKeyForHashingPassword))
+	hash.Write([]byte(fmt.Sprintf("%s:%s:%s", username, password, ua.Cfg.SecretKeyForHashingPassword)))
 
 	return hash.Sum(nil)
 }

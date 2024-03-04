@@ -95,7 +95,6 @@ Content-Type: application/json
 ```
 POST /api_public/user/login HTTP/1.1
 Content-Type: application/json
-Authorization: Bearer ${access_token}"
 ...
 
 {
@@ -121,6 +120,7 @@ Authorization: Bearer ${access_token}"
 ```
 POST /api_private/user/audiofile HTTP/1.1
 Content-Type: application/json
+Authorization: Bearer ${access_token}
 ...
 {
 	"asr": "<asr>",
@@ -156,6 +156,7 @@ Content-Type: application/json
 ```
 GET /api_private/user/audiofiles HTTP/1.1
 Content-Length: 0
+Authorization: Bearer ${access_token}
 ```
 
 Возможные коды ответа:
@@ -212,6 +213,7 @@ Content-Length: 0
 ```
 GET /api_private/user/textfile/6663e4567-e89b-12d3-a456-426655440000 HTTP/1.1
 Content-Length: 0
+Authorization: Bearer ${access_token}
 ```
 
 Возможные коды ответа:
@@ -260,6 +262,7 @@ Content-Length: 0
 ```
 POST /api/user/balance/withdraw HTTP/1.1
 Content-Type: application/json
+Authorization: Bearer ${access_token}
 
 {
     "id_file": "123e4567-e89b-12d3-a456-426655440000",
@@ -287,6 +290,7 @@ Content-Type: application/json
 ```
 GET /api_private/user/qualitycontrol/123e4567-e89b-12d3-a456-426655440000 HTTP/1.1
 Content-Length: 0
+Authorization: Bearer ${access_token}
 ```
 
 Возможные коды ответа:

@@ -2,6 +2,10 @@ package audiofilesapp
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,7 +25,7 @@ const (
 
 type AudioFile struct {
 	UUID       uuid.UUID
-	FileID     uuid.UUID
+	FileID     string
 	FileName   string
 	ASR        string
 	Status     string
@@ -35,11 +39,32 @@ type AudioFileStore interface {
 }
 
 type AudioFiles struct {
-	audioFile AudioFileStore
+	audioFileStore AudioFileStore
 }
 
-func NewAudioFile(audioFile AudioFileStore) *AudioFiles {
+func NewAudioFile(audioFileStore AudioFileStore) *AudioFiles {
 	return &AudioFiles{
-		audioFile: audioFile,
+		audioFileStore: audioFileStore,
 	}
+}
+
+func (af *AudioFiles) Create(ctx context.Context, audiofile AudioFile) error {
+
+	audiofile.FileID = hex.EncodeToString(af.writeHash(audiofile.FileName, audiofile.UserID.String()))
+
+	if err := af.audioFileStore.Create(ctx, audiofile); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (af *AudioFiles) writeHash(filename, userID string) []byte {
+
+	secretKey := "file2468"
+
+	hash := hmac.New(sha256.New, []byte(secretKey))
+	hash.Write([]byte(fmt.Sprintf("%s:%s:%s", filename, userID, secretKey)))
+
+	return hash.Sum(nil)
 }

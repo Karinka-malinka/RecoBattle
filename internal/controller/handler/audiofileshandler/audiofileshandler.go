@@ -6,12 +6,14 @@ import (
 	"os"
 
 	"github.com/RecoBattle/internal/app/audiofilesapp"
+	"github.com/RecoBattle/internal/app/userapp"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
 
 type AudioFilesHandler struct {
-	AudioFiles      *audiofilesapp.AudioFiles
+	AudioFilesApp   *audiofilesapp.AudioFiles
 	PathFileStorage string
 }
 
@@ -21,8 +23,8 @@ type RequestData struct {
 	Audio    string `json:"audio" validate:"required"`
 }
 
-func NewAudioFilesHandler(audioFiles *audiofilesapp.AudioFiles, pathFileStorage string) *AudioFilesHandler {
-	return &AudioFilesHandler{AudioFiles: audioFiles, PathFileStorage: pathFileStorage}
+func NewAudioFilesHandler(audioFilesApp *audiofilesapp.AudioFiles, pathFileStorage string) *AudioFilesHandler {
+	return &AudioFilesHandler{AudioFilesApp: audioFilesApp, PathFileStorage: pathFileStorage}
 }
 
 func (lh *AudioFilesHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {
@@ -66,6 +68,10 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(*userapp.JWTCustomClaims)
+	userID := claims.UserID
+
 	go func() error {
 
 		out, err := os.Create(lh.PathFileStorage + audioFile.FileName)
@@ -77,6 +83,18 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		defer out.Close()
 
 		_, err = io.WriteString(out, audioFile.Audio)
+		if err != nil {
+			errc <- err
+			return err
+		}
+
+		newAudioFile := audiofilesapp.AudioFile{
+			FileName: audioFile.FileName,
+			ASR:      audioFile.ASR,
+			UserID:   userID,
+		}
+		err = lh.AudioFilesApp.Create(c.Request().Context(), newAudioFile)
+
 		if err != nil {
 			errc <- err
 			return err

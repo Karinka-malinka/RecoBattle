@@ -6,6 +6,8 @@ import (
 	"os/signal"
 
 	"github.com/RecoBattle/cmd/config"
+	"github.com/RecoBattle/internal/app/asr"
+	yandexspeachkit "github.com/RecoBattle/internal/app/asr/yandexSpeachKit"
 	"github.com/RecoBattle/internal/app/audiofilesapp"
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/RecoBattle/internal/controller/handler"
@@ -42,7 +44,11 @@ func main() {
 		logrus.Fatalf("error in open database. error: %v", err)
 	}
 
-	var registeredHandlers []handler.Handler
+	//Add ASR
+	asrRegistry := asr.ASRRegistry{Services: make(map[string]asr.ASR)}
+
+	yandexASR := yandexspeachkit.ServiceASRYandex{Name: "yandexSpeachKit"}
+	asrRegistry.AddService("yandexSpeachKit", yandexASR)
 
 	//Init storage and services
 	userStore, err := userdb.NewUserStore(ctx, db.DB)
@@ -58,6 +64,8 @@ func main() {
 	audiofilesApp := audiofilesapp.NewAudioFile(audiofileStore)
 
 	//Add Actions to Handlers to slice
+	var registeredHandlers []handler.Handler
+
 	userHandler := userhandler.NewUserHandler(userApp)
 	registeredHandlers = append(registeredHandlers, userHandler)
 

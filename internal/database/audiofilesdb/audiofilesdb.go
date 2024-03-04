@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/RecoBattle/internal/app/audiofilesapp"
 	"github.com/RecoBattle/internal/database"
@@ -23,6 +24,7 @@ func NewAudioFileStore(ctx context.Context, db *sql.DB) (*AudioFileStore, error)
 		"file_id" TEXT PRIMARY KEY,
 		"file_name" TEXT,
 		"user_id" TEXT,
+		"uploaded_at" TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(uuid)
 	  )`)
 
@@ -54,7 +56,7 @@ func (d *AudioFileStore) Create(ctx context.Context, audioFile audiofilesapp.Aud
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO audiofiles (file_id, file_name, user_id) VALUES($1,$2,$3)", audioFile.FileID, audioFile.FileName, audioFile.Status)
+	_, err = tx.ExecContext(ctx, "INSERT INTO audiofiles (file_id, file_name, user_id, uploaded_at) VALUES($1,$2,$3,$4)", audioFile.FileID, audioFile.FileName, audioFile.Status, time.Now())
 
 	if err != nil {
 		var pgErr *pgconn.PgError

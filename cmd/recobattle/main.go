@@ -9,14 +9,17 @@ import (
 	"github.com/RecoBattle/internal/app/asr"
 	yandexspeachkit "github.com/RecoBattle/internal/app/asr/yandexSpeachKit"
 	"github.com/RecoBattle/internal/app/audiofilesapp"
+	"github.com/RecoBattle/internal/app/qualitycontrolapp"
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/RecoBattle/internal/controller/handler"
 	"github.com/RecoBattle/internal/controller/handler/audiofileshandler"
+	"github.com/RecoBattle/internal/controller/handler/qualitycontrolhandler"
 	"github.com/RecoBattle/internal/controller/handler/userhandler"
 	"github.com/RecoBattle/internal/controller/router"
 	"github.com/RecoBattle/internal/controller/server"
 	"github.com/RecoBattle/internal/database"
 	"github.com/RecoBattle/internal/database/audiofilesdb"
+	"github.com/RecoBattle/internal/database/qualitycontroldb"
 	"github.com/RecoBattle/internal/database/userdb"
 	"github.com/RecoBattle/internal/logger"
 	"github.com/sirupsen/logrus"
@@ -63,14 +66,23 @@ func main() {
 	}
 	audiofilesApp := audiofilesapp.NewAudioFile(audiofileStore)
 
+	qcStore, err := qualitycontroldb.NewQCStore(ctx, db.DB)
+	if err != nil {
+		logrus.Fatalf("error in creating user store table")
+	}
+	qcApp := qualitycontrolapp.NewQualityControl(qcStore)
+
 	//Add Actions to Handlers to slice
 	var registeredHandlers []handler.Handler
 
 	userHandler := userhandler.NewUserHandler(userApp)
 	registeredHandlers = append(registeredHandlers, userHandler)
 
-	audiofilesHandler := audiofileshandler.NewAudioFilesHandler(audiofilesApp, cfg.PathFileStorage)
+	audiofilesHandler := audiofileshandler.NewAudioFilesHandler(audiofilesApp, &asrRegistry, cfg.PathFileStorage)
 	registeredHandlers = append(registeredHandlers, audiofilesHandler)
+
+	qcHandler := qualitycontrolhandler.NewQCHandler(qcApp)
+	registeredHandlers = append(registeredHandlers, qcHandler)
 
 	appRouter := router.NewRouter(cnf.ApiServer, registeredHandlers)
 	appServer := server.NewServer(cfg.RunAddr, appRouter.Echo)

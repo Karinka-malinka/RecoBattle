@@ -34,17 +34,12 @@ func (lh *UserHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *
 //
 //	@Summary      Register
 //	@Description  register
-//	@Tags         User
-//	@Accept       json
-//	@Produce      json
 //	@Param        json body RegisterRequest true "Register new User"
 //	@Success      200 {object} RegisterResponse
 //	@Failure      400 {string} please check request struct
 //	@Failure      409 {string} login is busy
 //	@Failure      500 {string} internal server error
 //	@Router       /api_public/user/register [post]
-//
-//	@Security JWT Token
 func (lh *UserHandler) Register(c echo.Context) error {
 
 	ca := make(chan *userapp.LoginResponse)
@@ -94,17 +89,12 @@ func (lh *UserHandler) Register(c echo.Context) error {
 //
 //	@Summary      Login
 //	@Description  login
-//	@Tags         User
-//	@Accept       json
-//	@Produce      json
 //	@Param        json body RegisterRequest true "Register new User"
 //	@Success      200 {object} RegisterResponse
 //	@Failure      400 {string} please check request struct
 //	@Failure      401 {string} invalid username/password pair
 //	@Failure      500 {string} internal server error
 //	@Router       /api_public/user/register [post]
-//
-//	@Security JWT Token
 func (lh *UserHandler) Login(c echo.Context) error {
 
 	ca := make(chan *userapp.LoginResponse)

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/asr"
 	"github.com/sirupsen/logrus"
 )
@@ -15,17 +16,9 @@ type Response struct {
 	Data string `json:"result"`
 }
 
-type YandexSpeechToTextConfig struct {
-	YandexFolderId  string
-	YandexKey       string
-	YandexAsrUri    string
-	Format          string
-	SampleRateHertz string
-}
-
 type ServiceASRYandex struct {
 	Name   string
-	cnf    *YandexSpeechToTextConfig
+	cnf    *config.YandexAsr
 	client *http.Client
 }
 
@@ -35,7 +28,7 @@ func (ct ServiceASRYandex) RegisterASR() string {
 	return ct.Name
 }
 
-func (ct *ServiceASRYandex) TextFromASRModel(data []byte) (string, error) {
+func (ct ServiceASRYandex) TextFromASRModel(data []byte) (string, error) {
 	var result Response
 
 	uri := fmt.Sprintf("%v?topic=%v&folderId=%v&lang=ru-RU&format=%v&sampleRateHertz=%v", ct.cnf.YandexAsrUri, "general", ct.cnf.YandexFolderId, ct.cnf.Format, ct.cnf.SampleRateHertz)

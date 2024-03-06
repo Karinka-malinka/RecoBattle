@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/RecoBattle/internal/app/asr"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -17,25 +19,37 @@ const (
 	StatusINVALID    = "INVALID"
 	StatusPROCESSED  = "PROCESSED"
 
-	ASRYaSpeachKit = "yandexSpeachKit"
-	ASRSalut       = "salut"
-	ASRVosk        = "vosk"
-	ASR3iTech      = "3iTech"
+	//ASRYaSpeachKit = "yandexSpeachKit"
+	//ASRSalut       = "salut"
+	//ASRVosk        = "vosk"
+	//ASR3iTech      = "3iTech"
 )
 
 type AudioFile struct {
-	UUID       uuid.UUID
-	FileID     string
-	FileName   string
-	ASR        string
-	Status     string
-	UploadedAt time.Time
-	UserID     uuid.UUID
+	UUID       uuid.UUID `json:"uuid"`
+	FileID     string    `json:"id_file"`
+	FileName   string    `json:"file_name"`
+	ASR        string    `json:"asr"`
+	Status     string    `json:"status"`
+	UploadedAt time.Time `json:"uploaded_at"`
+	UserID     uuid.UUID `json:"-"`
+}
+
+type ResultASR struct {
+	UUID       uuid.UUID `json:"-"`
+	ChannelTag string    `json:"channelTag"`
+	Text       string    `json:"text"`
+	StartTime  float32   `json:"startTime"`
+	EndTime    float32   `json:"endTime"`
 }
 
 type AudioFileStore interface {
-	Create(ctx context.Context, audioFile AudioFile) error
-	//Read(ctx context.Context, userID string) (*[]AudioFile, error)
+	CreateFile(ctx context.Context, audioFile AudioFile) error
+	CreateASR(ctx context.Context, audioFile AudioFile) error
+	UpdateStatusASR(ctx context.Context, audioFileUUID, status string) error
+	CreateResultASR(ctx context.Context, resultASR ResultASR) error
+	GetAudioFiles(ctx context.Context, userID string) (*[]AudioFile, error)
+	GetResultASR(ctx context.Context, uuid string) (*[]ResultASR, error)
 }
 
 type AudioFiles struct {
@@ -52,11 +66,72 @@ func (af *AudioFiles) Create(ctx context.Context, audiofile AudioFile) error {
 
 	audiofile.FileID = hex.EncodeToString(af.writeHash(audiofile.FileName, audiofile.UserID.String()))
 
-	if err := af.audioFileStore.Create(ctx, audiofile); err != nil {
+	if err := af.audioFileStore.CreateFile(ctx, audiofile); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (af *AudioFiles) AddASRProcessing(ctx context.Context, audiofile AudioFile, asr asr.ASR, data []byte) error {
+
+	audiofile.UUID = uuid.New()
+	if err := af.audioFileStore.CreateASR(ctx, audiofile); err != nil {
+		return err
+	}
+
+	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSING); err != nil {
+		return err
+	}
+
+	result, err := asr.TextFromASRModel(data[44:])
+	if err != nil {
+		logrus.Errorf("error in sending request to ASR. error: %#v", result)
+		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
+			return err
+		}
+	}
+
+	resASR := ResultASR{
+		UUID:       audiofile.UUID,
+		ChannelTag: "1",
+		Text:       result,
+	}
+
+	if err := af.audioFileStore.CreateResultASR(ctx, resASR); err != nil {
+		logrus.Errorf("error in writing the ASR result. error: %#v", result)
+		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
+			return err
+		}
+	}
+
+	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSED); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (af *AudioFiles) GetAudioFiles(ctx context.Context, userID uuid.UUID) (*[]AudioFile, error) {
+
+	files, err := af.audioFileStore.GetAudioFiles(ctx, userID.String())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
+func (af *AudioFiles) GetResultASR(ctx context.Context, uuid string) (*[]ResultASR, error) {
+
+	resultASR, err := af.audioFileStore.GetResultASR(ctx, uuid)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resultASR, nil
 }
 
 func (af *AudioFiles) writeHash(filename, userID string) []byte {

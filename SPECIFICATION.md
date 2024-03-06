@@ -269,8 +269,8 @@ Authorization: Bearer ${access_token}
 
 {
     "id_file": "123e4567-e89b-12d3-a456-426655440000",
-    "text_channel_1": "Добрый день. У меня вопрос про мой остаток на счету..."
-    "text_channel_2": "Здравствуйте..."
+    "channelTag": "1"
+    "text": "Здравствуйте..."
 }
 ```
 

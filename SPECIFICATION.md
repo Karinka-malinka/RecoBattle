@@ -231,20 +231,20 @@ Authorization: Bearer ${access_token}
         {
             "channelTag" : "1",
             "text" : "добрый день",
-            "startTime": "2020-12-10T15:15:45:07+03:00"
-            "endTime": "2020-12-10T15:15:45:07+03:00"
+            "startTime": 0.879999999
+            "endTime": 1.159999992
         },
         {
             "channelTag" : "2",
             "text" : "здравствуйте",
-            "startTime": "2020-12-10T15:15:45:17+03:00"
-            "endTime": "2020-12-10T15:15:45:07+03:00"
+            "startTime": 1.219999995
+            "endTime": 1.539999988
         },
-         {
-            "channelTag" : "3",
+    	{
+            "channelTag" : "1",
             "text" : "у меня вопрос про мой остаток на счету",
-            "startTime": "2020-12-10T15:15:45:21+03:00"
-            "endTime": "2020-12-10T15:15:45:07+03:00"
+            "startTime": 1.739999988
+            "endTime": 3.539999988
         },
     	...
     ]

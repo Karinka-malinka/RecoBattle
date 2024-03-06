@@ -39,11 +39,11 @@
 
 * `POST /api_public/user/register` — регистрация пользователя;
 * `POST /api_public/user/login` — аутентификация пользователя;
-* `POST /api_private/user/audiofile` — загрузка пользователем wav-файла для распознавания;
-* `GET /api_private/user/audiofiles` — получение списка загруженных пользователем wav-файлов, статусов их обработки;
-* `GET /api_private/user/textfile/{uuid}` — получение текстового результата от ASR;
-* `POST /api_private/user/ideal` — загрузка эталонного текста разговора для оценки качества;
-* `GET /api_private/user/qualitycontrol/{id_file}` — получение информации о качестве распознавания.
+* `POST /api_private/asr/audiofile` — загрузка пользователем wav-файла для распознавания;
+* `GET /api_private/asr/audiofiles` — получение списка загруженных пользователем wav-файлов, статусов их обработки;
+* `GET /api_private/asr/textfile/{uuid}` — получение текстового результата от ASR;
+* `POST /api_private/qualitycontrol/ideal` — загрузка эталонного текста разговора для оценки качества;
+* `GET /api_private/qualitycontrol/{id_file}` — получение информации о качестве распознавания.
 
 ### Общие ограничения и требования
 
@@ -112,13 +112,13 @@ Content-Type: application/json
 
 #### **Загрузка пользователем wav-файла для распознавания**
 
-Хендлер: `POST /api_private/user/audiofile`.
+Хендлер: `POST /api_private/asr/audiofile`.
 
 Хендлер доступен только аутентифицированным пользователям. 
 Формат запроса:
 
 ```
-POST /api_private/user/audiofile HTTP/1.1
+POST /api_private/asr/audiofile HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer ${access_token}
 ...
@@ -140,7 +140,7 @@ Authorization: Bearer ${access_token}
 
 #### **Получение списка загруженных пользователем wav-файлов**
 
-Хендлер: `GET /api_private/user/audiofiles`.
+Хендлер: `GET /api_private/asr/audiofiles`.
 
 Хендлер доступен только авторизованному пользователю. ID wav-файлов в выдаче должны быть отсортированы по времени загрузки от самых новых к самым старым. Формат даты — RFC3339.
 
@@ -154,7 +154,7 @@ Authorization: Bearer ${access_token}
 Формат запроса:
 
 ```
-GET /api_private/user/audiofiles HTTP/1.1
+GET /api_private/asr/audiofiles HTTP/1.1
 Content-Length: 0
 Authorization: Bearer ${access_token}
 ```
@@ -204,14 +204,14 @@ Authorization: Bearer ${access_token}
 
 #### **Получение текстового результата от ASR**
 
-Хендлер: `GET /api_private/user/textfile/{uuid}`.
+Хендлер: `GET /api_private/asr/textfile/{uuid}`.
 
 Хендлер доступен только авторизованному пользователю. ID реплик в выдаче должны быть отсортированы по времени возникновения от самых старых к самым новым.
 
 Формат запроса:
 
 ```
-GET /api_private/user/textfile/6663e4567-e89b-12d3-a456-426655440000 HTTP/1.1
+GET /api_private/user/asr/6663e4567-e89b-12d3-a456-426655440000 HTTP/1.1
 Content-Length: 0
 Authorization: Bearer ${access_token}
 ```
@@ -256,7 +256,7 @@ Authorization: Bearer ${access_token}
   
 #### **Загрузка эталонного текста разговора для оценки качества**
 
-Хендлер: `POST /api_private/user/ideal`.
+Хендлер: `POST /api_private/qualitycontrol/ideal`.
 
 Хендлер доступен только авторизованному пользователю. В ответе должны содержаться данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов.
 
@@ -284,7 +284,7 @@ Authorization: Bearer ${access_token}
 
 #### **Получение информации о качестве распознавания**
 
-Хендлер: `GET /api_private/user/qualitycontrol/{id_file}` 
+Хендлер: `GET /api_private/qualitycontrol/{id_file}` 
 
 Хендлер доступен только авторизованному пользователю.
 
@@ -330,3 +330,4 @@ Authorization: Bearer ${access_token}
 - адрес и порт запуска сервиса: переменная окружения ОС `RUN_ADDRESS` или флаг `-a`
 - адрес подключения к базе данных: переменная окружения ОС `DATABASE_URI` или флаг `-d`
 - адрес файла config.toml с данными для подключения к сервисам ASR: переменная окружения ОС `CONFIG_ASR` или флаг `-c`
+- путь до папки (хранилища) файлов: переменная окружения ОС `PATH_FILE_STORAGE` или флаг `-s`

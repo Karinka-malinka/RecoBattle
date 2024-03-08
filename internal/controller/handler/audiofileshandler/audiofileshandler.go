@@ -1,6 +1,7 @@
 package audiofileshandler
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"github.com/RecoBattle/internal/app/asr"
 	"github.com/RecoBattle/internal/app/audiofilesapp"
 	"github.com/RecoBattle/internal/controller/handler"
+	"github.com/RecoBattle/internal/database"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -110,12 +112,7 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 			return err
 		}
 
-		err = lh.AudioFilesApp.AddASRProcessing(c.Request().Context(), newAudioFile, asr, data)
-
-		if err != nil {
-			errc <- err
-			return err
-		}
+		go lh.AudioFilesApp.AddASRProcessing(c.Request().Context(), newAudioFile, asr, data)
 
 		ca <- true
 		return nil
@@ -124,9 +121,13 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 
 	select {
 	case <-ca:
-		return c.String(http.StatusOK, "OK")
+		return c.String(http.StatusAccepted, "OK")
 	case err := <-errc:
 		logrus.Errorf("error: %v", err)
+		var errConflict *database.ErrConflict
+		if errors.As(err, &errConflict) {
+			return c.String(http.StatusConflict, "")
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	case <-c.Request().Context().Done():
 		return nil

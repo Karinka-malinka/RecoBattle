@@ -126,7 +126,7 @@ func (lh *QCHandler) QualityControl(c echo.Context) error {
 		if len(result) == 0 {
 			return echo.NewHTTPError(http.StatusNoContent)
 		}
-		return c.String(http.StatusOK, "OK")
+		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
 		logrus.Errorf("error: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

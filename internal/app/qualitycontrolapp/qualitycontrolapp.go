@@ -2,6 +2,8 @@ package qualitycontrolapp
 
 import (
 	"context"
+	"strings"
+	"unicode"
 
 	"github.com/google/uuid"
 )
@@ -14,15 +16,15 @@ type IdealText struct {
 }
 
 type QualityControl struct {
-	ASR       string `json:"asr"`
-	TestIdeal string `json:"-"`
-	TextASR   string `json:"-"`
-	Quality   int    `json:"quality"`
+	ASR       string  `json:"asr"`
+	TestIdeal string  `json:"-"`
+	TextASR   string  `json:"-"`
+	Quality   float32 `json:"quality"`
 }
 
 type QualityControlStore interface {
 	Create(ctx context.Context, qualityControl IdealText) error
-	GetTextASRIdeal(ctx context.Context, fileID string) (*[]QualityControl, error)
+	GetTextASRIdeal(ctx context.Context, fileID string) (*[]QualityControl, string, error)
 }
 
 type QualityControls struct {
@@ -48,10 +50,55 @@ func (qc *QualityControls) Create(ctx context.Context, qualityControl IdealText)
 
 func (qc *QualityControls) QualityControl(ctx context.Context, fileID string) (*[]QualityControl, error) {
 
-	data, err := qc.QualityControlStore.GetTextASRIdeal(ctx, fileID)
+	data, idealText, err := qc.QualityControlStore.GetTextASRIdeal(ctx, fileID)
 	if err != nil {
 		return nil, err
 	}
 
+	idealText = removeSpecialCharacters(idealText)
+
+	for _, d := range *data {
+		resASR := removeSpecialCharacters(d.TextASR)
+		d.Quality = compareStrings(idealText, resASR)
+		d.TestIdeal = idealText
+	}
+
 	return data, nil
+}
+
+func removeSpecialCharacters(s string) string {
+
+	var cleanedString strings.Builder
+
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsSpace(r) {
+			cleanedString.WriteRune(r)
+		}
+	}
+
+	return strings.ToLower(cleanedString.String())
+}
+
+func compareStrings(str1, str2 string) float32 {
+
+	words1 := strings.Fields(str1)
+	words2 := strings.Fields(str2)
+
+	minLength := len(words1)
+
+	if len(words2) < minLength {
+		minLength = len(words2)
+	}
+
+	matches := 0
+
+	for i := 0; i < minLength; i++ {
+		if words1[i] == words2[i] {
+			matches++
+		}
+	}
+
+	similarity := float32(matches) / float32(minLength)
+
+	return similarity
 }

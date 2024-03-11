@@ -70,7 +70,7 @@ func (d *AudioFileStore) CreateFile(ctx context.Context, audioFile audiofilesapp
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO audiofiles (file_id, file_name, status, uploaded_at) VALUES($1,$2,$3,$4)", audioFile.FileID, audioFile.FileName, audioFile.Status, time.Now())
+	_, err = tx.ExecContext(ctx, "INSERT INTO audiofiles (file_id, file_name, user_id, uploaded_at) VALUES($1,$2,$3,$4)", audioFile.FileID, audioFile.FileName, audioFile.UserID, time.Now())
 
 	if err != nil {
 		var pgErr *pgconn.PgError

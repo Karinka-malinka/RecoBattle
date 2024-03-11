@@ -22,7 +22,7 @@ func NewQCStore(ctx context.Context, db *sql.DB) (*QualityControlStore, error) {
 
 	_, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS quality_control (
 		"uuid" TEXT PRIMARY KEY,
-		"file_id" TEXT PRIMARY KEY,
+		"file_id" TEXT,
 		"channelTag" TEXT,
 		"text" TEXT,
 		FOREIGN KEY (file_id) REFERENCES audiofiles(file_id)

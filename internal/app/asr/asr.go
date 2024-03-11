@@ -7,7 +7,6 @@ import (
 )
 
 type ASR interface {
-	RegisterASR() string
 	TextFromASRModel(data []byte) (string, error)
 }
 

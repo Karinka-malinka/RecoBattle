@@ -62,33 +62,39 @@ func NewAudioFile(audioFileStore AudioFileStore) *AudioFiles {
 	}
 }
 
-func (af *AudioFiles) Create(ctx context.Context, audiofile AudioFile) error {
+func (af *AudioFiles) Create(ctx context.Context, audiofile AudioFile) (string, error) {
 
 	audiofile.FileID = hex.EncodeToString(af.writeHash(audiofile.FileName, audiofile.UserID.String()))
 
 	if err := af.audioFileStore.CreateFile(ctx, audiofile); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return audiofile.FileID, nil
 }
 
-func (af *AudioFiles) AddASRProcessing(ctx context.Context, audiofile AudioFile, asr asr.ASR, data []byte) error {
+func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []byte) {
+
+	ctx := context.Background()
 
 	audiofile.UUID = uuid.New()
 	if err := af.audioFileStore.CreateASR(ctx, audiofile); err != nil {
-		return err
+		logrus.Error(err.Error())
+		return
 	}
 
+	time.Sleep(30 * time.Second)
+
 	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSING); err != nil {
-		return err
+		logrus.Error(err.Error())
+		return
 	}
 
 	result, err := asr.TextFromASRModel(data[44:])
 	if err != nil {
 		logrus.Errorf("error in sending request to ASR. error: %#v", result)
 		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
-			return err
+			return
 		}
 	}
 
@@ -99,17 +105,17 @@ func (af *AudioFiles) AddASRProcessing(ctx context.Context, audiofile AudioFile,
 	}
 
 	if err := af.audioFileStore.CreateResultASR(ctx, resASR); err != nil {
-		logrus.Errorf("error in writing the ASR result. error: %#v", result)
+		logrus.Errorf("error in writing the ASR result. error: %v", err)
 		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
-			return err
+			return
 		}
 	}
 
 	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSED); err != nil {
-		return err
+		logrus.Error(err.Error())
+		return
 	}
 
-	return nil
 }
 
 func (af *AudioFiles) GetAudioFiles(ctx context.Context, userID uuid.UUID) (*[]AudioFile, error) {

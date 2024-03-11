@@ -50,25 +50,25 @@ func main() {
 	//Add ASR
 	asrRegistry := asr.ASRRegistry{Services: make(map[string]asr.ASR)}
 
-	yandexASR := yandexspeachkit.ServiceASRYandex{Name: "yandexSpeachKit"}
+	yandexASR := yandexspeachkit.NewYandexASRStore(cnf.YandexAsr)
 	asrRegistry.AddService("yandexSpeachKit", yandexASR)
 
 	//Init storage and services
 	userStore, err := userdb.NewUserStore(ctx, db.DB)
 	if err != nil {
-		logrus.Fatalf("error in creating user store table")
+		logrus.Fatalf("error in creating user store table: " + err.Error())
 	}
 	userApp := userapp.NewUser(userStore)
 
 	audiofileStore, err := audiofilesdb.NewAudioFileStore(ctx, db.DB)
 	if err != nil {
-		logrus.Fatalf("error in creating audiofile store table")
+		logrus.Fatalf("error in creating audiofile store table: " + err.Error())
 	}
 	audiofilesApp := audiofilesapp.NewAudioFile(audiofileStore)
 
 	qcStore, err := qualitycontroldb.NewQCStore(ctx, db.DB)
 	if err != nil {
-		logrus.Fatalf("error in creating user store table")
+		logrus.Fatalf("error in creating quality control store table: " + err.Error())
 	}
 	qcApp := qualitycontrolapp.NewQualityControl(qcStore)
 
@@ -84,7 +84,7 @@ func main() {
 	qcHandler := qualitycontrolhandler.NewQCHandler(qcApp)
 	registeredHandlers = append(registeredHandlers, qcHandler)
 
-	appRouter := router.NewRouter(cnf.ApiServer, registeredHandlers)
+	appRouter := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp)
 	appServer := server.NewServer(cfg.RunAddr, appRouter.Echo)
 
 	go appServer.Start(ctx)

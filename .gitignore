@@ -18,6 +18,7 @@ cmd/recobattle/recobattle
 
 # Dependency directories (remove the comment below to include it)
 vendor/
+testfile/
 
 # Configuration files
 cmd/config/config.toml

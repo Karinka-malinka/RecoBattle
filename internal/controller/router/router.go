@@ -31,16 +31,17 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
-func NewRouter(cfg config.ApiServer, handlers []handler.Handler) *Router {
+func NewRouter(cfg config.ApiServer, handlers []handler.Handler, usersapp *userapp.Users) *Router {
 
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
 	r := &Router{
-		Echo: e,
+		Echo:    e,
+		UserApp: usersapp,
 	}
 
-	e.Use(middleware.Recover())
+	//e.Use(middleware.Recover())
 	e.Use(middleware.Decompress())
 	e.Use(middleware.Gzip())
 

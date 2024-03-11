@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/asr"
@@ -17,15 +18,19 @@ type Response struct {
 }
 
 type ServiceASRYandex struct {
-	Name   string
-	cnf    *config.YandexAsr
+	cnf    config.YandexAsr
 	client *http.Client
 }
 
 var _ asr.ASR = &ServiceASRYandex{}
 
-func (ct ServiceASRYandex) RegisterASR() string {
-	return ct.Name
+func NewYandexASRStore(cnf config.YandexAsr) *ServiceASRYandex {
+	return &ServiceASRYandex{
+		cnf: cnf,
+		client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+	}
 }
 
 func (ct ServiceASRYandex) TextFromASRModel(data []byte) (string, error) {

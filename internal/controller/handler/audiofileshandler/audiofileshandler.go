@@ -42,10 +42,10 @@ func (lh *AudioFilesHandler) RegisterHandler(e *echo.Echo, publicGroup, privateG
 //	@Summary      SetAudioFile
 //	@Description  add audio file
 //	@Param        json body RequestData
-//	@Success      200 {string} wav file has already been uploaded by this user
 //	@Success      202 {string} the new wav file has been accepted for processing
 //	@Failure      400 {string} invalid request format
 //	@Failure      401 {string} the user is not authenticated
+//	@Failure      409 {string} wav file has already been uploaded by this user
 //	@Failure      422 {string} invalid ASR format or audio file type
 //	@Failure      500 {string} internal server error
 //	@Router       /api_private/asr/audiofile [post]
@@ -98,13 +98,6 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 			return err
 		}
 
-		err = lh.AudioFilesApp.Create(c.Request().Context(), newAudioFile)
-
-		if err != nil {
-			errc <- err
-			return err
-		}
-
 		data, err := os.ReadFile(filePath)
 
 		if err != nil {
@@ -112,7 +105,14 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 			return err
 		}
 
-		go lh.AudioFilesApp.AddASRProcessing(c.Request().Context(), newAudioFile, asr, data)
+		newAudioFile.FileID, err = lh.AudioFilesApp.Create(c.Request().Context(), newAudioFile)
+
+		if err != nil {
+			errc <- err
+			return err
+		}
+
+		go lh.AudioFilesApp.AddASRProcessing(newAudioFile, asr, data)
 
 		ca <- true
 		return nil
@@ -126,7 +126,7 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		logrus.Errorf("error: %v", err)
 		var errConflict *database.ErrConflict
 		if errors.As(err, &errConflict) {
-			return c.String(http.StatusConflict, "")
+			return c.String(http.StatusConflict, "wav file has already been uploaded by this user")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	case <-c.Request().Context().Done():

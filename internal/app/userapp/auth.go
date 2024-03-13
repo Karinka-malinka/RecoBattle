@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/RecoBattle/cmd/config"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
 )
 
 type JWTCustomClaims struct {
-	UserID uuid.UUID `json:"user_id"`
+	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
@@ -37,10 +36,14 @@ func (ua *Users) newToken(user User, tokenExpiresAt uint, SecretKeyForToken stri
 
 func (ua *Users) getTokensWithClaims(user User, tokenExpiresAt uint) (token *jwt.Token) {
 
+	currentTime := time.Now()
+	ExpTime := currentTime.Add(time.Duration(tokenExpiresAt) * time.Minute)
+
+	logrus.Infof("Current time: %+v\n ExpTime: %+v", currentTime, ExpTime)
 	tokenClaims := &JWTCustomClaims{
-		UserID: user.UUID,
+		UserID: user.UUID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * time.Duration(tokenExpiresAt))),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(tokenExpiresAt) * time.Minute)),
 		},
 	}
 

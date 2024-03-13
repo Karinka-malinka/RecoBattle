@@ -22,7 +22,7 @@ type User struct {
 type UserStore interface {
 	Create(ctx context.Context, user User) error
 	GetByName(ctx context.Context, username string) (*User, error)
-	GetByID(ctx context.Context, userID uuid.UUID) (*User, error)
+	GetByID(ctx context.Context, userID string) (*User, error)
 }
 
 type Users struct {
@@ -30,9 +30,10 @@ type Users struct {
 	Cfg       config.ApiServer
 }
 
-func NewUser(userStore UserStore) *Users {
+func NewUser(userStore UserStore, cfg config.ApiServer) *Users {
 	return &Users{
 		userStore: userStore,
+		Cfg:       cfg,
 	}
 }
 
@@ -70,12 +71,12 @@ func (ua *Users) Login(ctx context.Context, user User) (*LoginResponse, error) {
 		return nil, errors.New("401")
 	}
 
-	accessToken, err := ua.newToken(user, ua.Cfg.AccessTokenExpiresAt, ua.Cfg.SecretKeyForAccessToken)
+	accessToken, err := ua.newToken(*userInDB, ua.Cfg.AccessTokenExpiresAt, ua.Cfg.SecretKeyForAccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := ua.newToken(user, ua.Cfg.RefreshTokenExpiresAt, ua.Cfg.SecretKeyForRefreshToken)
+	refreshToken, err := ua.newToken(*userInDB, ua.Cfg.RefreshTokenExpiresAt, ua.Cfg.SecretKeyForRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +85,7 @@ func (ua *Users) Login(ctx context.Context, user User) (*LoginResponse, error) {
 }
 
 func (ua *Users) checkHash(user User, userHash string) bool {
+
 	check1 := ua.writeHash(user.Username, user.Password)
 	check2, err := hex.DecodeString(userHash)
 
@@ -92,6 +94,7 @@ func (ua *Users) checkHash(user User, userHash string) bool {
 	}
 
 	return hmac.Equal(check2, check1)
+
 }
 
 func (ua *Users) writeHash(username string, password string) []byte {

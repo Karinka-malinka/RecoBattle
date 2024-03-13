@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/RecoBattle/internal/database/mocks"
 	"github.com/go-playground/validator"
@@ -33,7 +34,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 
 func TestUserHandler_Register(t *testing.T) {
 
-	//cfg := config.ApiServer{}
+	cfg := config.ApiServer{}
 	ctx := context.Background()
 
 	// создаём контроллер
@@ -57,7 +58,7 @@ func TestUserHandler_Register(t *testing.T) {
 	if err != nil {
 		logrus.Fatalf("error in creating user store table")
 	}*/
-	userApp := userapp.NewUser(m)
+	userApp := userapp.NewUser(m, cfg)
 
 	//cfg.BaseShortAddr = ""
 	//h := &UserHandler{}

@@ -8,8 +8,8 @@ import (
 	"github.com/RecoBattle/internal/controller/handler"
 	"github.com/RecoBattle/internal/controller/handler/userhandler"
 	"github.com/go-playground/validator"
-	"github.com/golang-jwt/jwt/v5"
-	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/golang-jwt/jwt/v4"
+	echojwt "github.com/labstack/echo-jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -31,17 +31,17 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
-func NewRouter(cfg config.ApiServer, handlers []handler.Handler, usersapp *userapp.Users) *Router {
+func NewRouter(cfg config.ApiServer, handlers []handler.Handler, ua *userapp.Users) *Router {
 
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
 
 	r := &Router{
 		Echo:    e,
-		UserApp: usersapp,
+		UserApp: ua,
 	}
 
-	//e.Use(middleware.Recover())
+	e.Use(middleware.Recover())
 	e.Use(middleware.Decompress())
 	e.Use(middleware.Gzip())
 
@@ -53,11 +53,13 @@ func NewRouter(cfg config.ApiServer, handlers []handler.Handler, usersapp *usera
 			return &userapp.JWTCustomClaims{}
 		},
 		SigningKey: []byte(cfg.SecretKeyForAccessToken),
-		ErrorHandler: func(c echo.Context, err error) error {
-			return r.TokenRefresher(c, cfg)
-		},
-		ContinueOnIgnoredError: true,
-		TokenLookup:            "header:Authorization:Bearer,cookie:access_token",
+		/*
+			ErrorHandler: func(c echo.Context, err error) error {
+				return r.TokenRefresher(c, cfg)
+			},
+			ContinueOnIgnoredError: true,
+			TokenLookup:            "header:Authorization:Bearer ,cookie:access_token",
+		*/
 	}
 
 	privateGroup.Use(echojwt.WithConfig(restrictedConfig))

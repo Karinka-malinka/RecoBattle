@@ -23,7 +23,7 @@ func NewQCStore(ctx context.Context, db *sql.DB) (*QualityControlStore, error) {
 	_, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS quality_control (
 		"uuid" TEXT PRIMARY KEY,
 		"file_id" TEXT,
-		"channelTag" TEXT,
+		"channel_tag" TEXT,
 		"text" TEXT,
 		FOREIGN KEY (file_id) REFERENCES audiofiles(file_id)
 	  )`)
@@ -44,7 +44,7 @@ func (d *QualityControlStore) Create(ctx context.Context, it qualitycontrolapp.I
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO quality_control (uuid, file_id, channelTag, text) VALUES($1,$2,$3,$4)", it.UUID.String(), it.FileID, it.ChannelTag, it.Text)
+	_, err = tx.ExecContext(ctx, "INSERT INTO quality_control (uuid, file_id, channel_tag, text) VALUES($1,$2,$3,$4)", it.UUID.String(), it.FileID, it.ChannelTag, it.Text)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -58,7 +58,7 @@ func (d *QualityControlStore) Create(ctx context.Context, it qualitycontrolapp.I
 	return tx.Commit()
 }
 
-func (d *QualityControlStore) GetTextASRIdeal(ctx context.Context, fileID string) (*[]qualitycontrolapp.QualityControl, string, error) {
+func (d *QualityControlStore) GetTextASRIdeal(ctx context.Context, fileID string) ([]qualitycontrolapp.QualityControl, string, error) {
 
 	var rows *sql.Rows
 	var qcs []qualitycontrolapp.QualityControl
@@ -82,7 +82,7 @@ func (d *QualityControlStore) GetTextASRIdeal(ctx context.Context, fileID string
 
 	var idealText string
 	if err = row.Scan(&idealText); err != nil {
-		return &qcs, "", nil
+		return qcs, "", nil
 	}
 
 	rows, err = qb.Select("asr.asr", "res.text").
@@ -110,5 +110,5 @@ func (d *QualityControlStore) GetTextASRIdeal(ctx context.Context, fileID string
 		qcs = append(qcs, qc)
 	}
 
-	return &qcs, idealText, nil
+	return qcs, idealText, nil
 }

@@ -10,7 +10,6 @@ import (
 
 	userapp "github.com/RecoBattle/internal/app/userapp"
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/google/uuid"
 )
 
 // MockUserStore is a mock of UserStore interface.
@@ -51,7 +50,7 @@ func (mr *MockUserStoreMockRecorder) Create(ctx, user interface{}) *gomock.Call 
 }
 
 // GetByID mocks base method.
-func (m *MockUserStore) GetByID(ctx context.Context, userID uuid.UUID) (*userapp.User, error) {
+func (m *MockUserStore) GetByID(ctx context.Context, userID string) (*userapp.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", ctx, userID)
 	ret0, _ := ret[0].(*userapp.User)

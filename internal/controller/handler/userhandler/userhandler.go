@@ -73,7 +73,7 @@ func (lh *UserHandler) Register(c echo.Context) error {
 	select {
 	case result := <-ca:
 		SendResponceToken(c, result)
-		return c.String(http.StatusOK, "")
+		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
 		var errConflict *database.ErrConflict
 		if errors.As(err, &errConflict) {
@@ -128,7 +128,7 @@ func (lh *UserHandler) Login(c echo.Context) error {
 	select {
 	case result := <-ca:
 		SendResponceToken(c, result)
-		return c.String(http.StatusOK, "")
+		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
 		if err.Error() == "401" {
 			return c.String(http.StatusUnauthorized, "invalid username/password pair")

@@ -47,10 +47,10 @@ func NewAudioFileStore(ctx context.Context, db *sql.DB) (*AudioFileStore, error)
 
 	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS result_asr (
 		"uuid" TEXT,
-		"channelTag" TEXT,
+		"channel_tag" TEXT,
 		"text" TEXT,
-		"startTime" REAL,
-		"endTime" REAL,
+		"start_time" REAL,
+		"end_time" REAL,
 		FOREIGN KEY (uuid) REFERENCES asr(uuid)
 	  )`)
 
@@ -129,7 +129,7 @@ func (d *AudioFileStore) CreateResultASR(ctx context.Context, resultASR audiofil
 
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO result_asr (uuid, channelTag, text, startTime, endTime) VALUES($1,$2,$3,$4,$5)",
+	_, err = tx.ExecContext(ctx, "INSERT INTO result_asr (uuid, channel_tag, text, start_time, end_time) VALUES($1,$2,$3,$4,$5)",
 		resultASR.UUID.String(), resultASR.ChannelTag, resultASR.Text, resultASR.StartTime, resultASR.EndTime)
 
 	if err != nil {
@@ -145,7 +145,7 @@ func (d *AudioFileStore) GetAudioFiles(ctx context.Context, userID string) (*[]a
 
 	qb := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
-	_, err := d.db.ExecContext(ctx, "CREATE TEMP TABLE temp_audiofiles AS SELECT (file_id, file_name, uploaded_at) FROM audiofiles WHERE user_id=$1;", userID)
+	_, err := d.db.ExecContext(ctx, "CREATE TEMP TABLE temp_audiofiles AS SELECT file_id, file_name, uploaded_at FROM audiofiles WHERE user_id=$1;", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (d *AudioFileStore) GetResultASR(ctx context.Context, uuid string) (*[]audi
 
 	qb := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
 
-	rows, err := qb.Select("channelTag", "text", "startTime", "endTime").
+	rows, err := qb.Select("channel_tag", "text", "start_time", "end_time").
 		From("result_asr").
 		Where(squirrel.Eq{"uuid": uuid}).
 		RunWith(d.db).

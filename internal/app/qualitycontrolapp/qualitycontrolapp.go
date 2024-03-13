@@ -24,7 +24,7 @@ type QualityControl struct {
 
 type QualityControlStore interface {
 	Create(ctx context.Context, qualityControl IdealText) error
-	GetTextASRIdeal(ctx context.Context, fileID string) (*[]QualityControl, string, error)
+	GetTextASRIdeal(ctx context.Context, fileID string) ([]QualityControl, string, error)
 }
 
 type QualityControls struct {
@@ -57,13 +57,13 @@ func (qc *QualityControls) QualityControl(ctx context.Context, fileID string) (*
 
 	idealText = removeSpecialCharacters(idealText)
 
-	for _, d := range *data {
-		resASR := removeSpecialCharacters(d.TextASR)
-		d.Quality = compareStrings(idealText, resASR)
-		d.TestIdeal = idealText
+	for i := range data {
+		resASR := removeSpecialCharacters(data[i].TextASR)
+		data[i].Quality = compareStrings(idealText, resASR)
+		data[i].TestIdeal = idealText
 	}
 
-	return data, nil
+	return &data, nil
 }
 
 func removeSpecialCharacters(s string) string {

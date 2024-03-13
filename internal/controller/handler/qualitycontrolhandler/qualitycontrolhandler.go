@@ -26,7 +26,7 @@ func NewQCHandler(qcApp *qualitycontrolapp.QualityControls) *QCHandler {
 
 func (lh *QCHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {
 
-	privateGroup.POST("/qualitycontrol/ideal ", lh.SetIdealText)
+	privateGroup.POST("/qualitycontrol/ideal", lh.SetIdealText)
 	privateGroup.GET("/qualitycontrol/:id_file", lh.QualityControl)
 }
 
@@ -124,7 +124,7 @@ func (lh *QCHandler) QualityControl(c echo.Context) error {
 	select {
 	case result := <-ca:
 		if len(result) == 0 {
-			return echo.NewHTTPError(http.StatusNoContent)
+			return c.String(http.StatusNoContent, "No content")
 		}
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:

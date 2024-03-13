@@ -8,7 +8,6 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/RecoBattle/internal/database"
-	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 
@@ -99,7 +98,7 @@ func (d *UserStore) GetByName(ctx context.Context, login string) (*userapp.User,
 	return &user, nil
 }
 
-func (d *UserStore) GetByID(ctx context.Context, userID uuid.UUID) (*userapp.User, error) {
+func (d *UserStore) GetByID(ctx context.Context, userID string) (*userapp.User, error) {
 
 	var rows *sql.Rows
 
@@ -107,7 +106,7 @@ func (d *UserStore) GetByID(ctx context.Context, userID uuid.UUID) (*userapp.Use
 
 	query, args, err := qb.Select("uuid, login, hash_pass").
 		From("users").
-		Where(squirrel.Eq{"uuid": userID.String()}).
+		Where(squirrel.Eq{"uuid": userID}).
 		ToSql()
 
 	if err != nil {

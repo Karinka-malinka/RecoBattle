@@ -32,7 +32,7 @@ type AudioFile struct {
 	ASR        string    `json:"asr"`
 	Status     string    `json:"status"`
 	UploadedAt time.Time `json:"uploaded_at"`
-	UserID     uuid.UUID `json:"-"`
+	UserID     string    `json:"-"`
 }
 
 type ResultASR struct {
@@ -64,7 +64,7 @@ func NewAudioFile(audioFileStore AudioFileStore) *AudioFiles {
 
 func (af *AudioFiles) Create(ctx context.Context, audiofile AudioFile) (string, error) {
 
-	audiofile.FileID = hex.EncodeToString(af.writeHash(audiofile.FileName, audiofile.UserID.String()))
+	audiofile.FileID = hex.EncodeToString(af.writeHash(audiofile.FileName, audiofile.UserID))
 
 	if err := af.audioFileStore.CreateFile(ctx, audiofile); err != nil {
 		return "", err
@@ -90,12 +90,13 @@ func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []
 		return
 	}
 
-	result, err := asr.TextFromASRModel(data[44:])
+	result, err := asr.TextFromASRModel(data)
 	if err != nil {
 		logrus.Errorf("error in sending request to ASR. error: %#v", result)
 		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
 			return
 		}
+		return
 	}
 
 	resASR := ResultASR{
@@ -109,6 +110,7 @@ func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []
 		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
 			return
 		}
+		return
 	}
 
 	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSED); err != nil {
@@ -118,9 +120,9 @@ func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []
 
 }
 
-func (af *AudioFiles) GetAudioFiles(ctx context.Context, userID uuid.UUID) (*[]AudioFile, error) {
+func (af *AudioFiles) GetAudioFiles(ctx context.Context, userID string) (*[]AudioFile, error) {
 
-	files, err := af.audioFileStore.GetAudioFiles(ctx, userID.String())
+	files, err := af.audioFileStore.GetAudioFiles(ctx, userID)
 
 	if err != nil {
 		return nil, err

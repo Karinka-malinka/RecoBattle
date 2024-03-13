@@ -194,7 +194,7 @@ func (lh *AudioFilesHandler) GetResultASR(c echo.Context) error {
 	ca := make(chan []audiofilesapp.ResultASR, 1)
 	errc := make(chan error)
 
-	uuid := c.Param("id")
+	uuid := c.Param("uuid")
 
 	go func() error {
 		outputData, err := lh.AudioFilesApp.GetResultASR(c.Request().Context(), uuid)
@@ -211,7 +211,7 @@ func (lh *AudioFilesHandler) GetResultASR(c echo.Context) error {
 	select {
 	case result := <-ca:
 		if len(result) == 0 {
-			return echo.NewHTTPError(http.StatusNoContent)
+			return c.String(http.StatusNoContent, "No content")
 		}
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:

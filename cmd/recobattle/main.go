@@ -58,7 +58,7 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("error in creating user store table: " + err.Error())
 	}
-	userApp := userapp.NewUser(userStore)
+	userApp := userapp.NewUser(userStore, cnf.ApiServer)
 
 	audiofileStore, err := audiofilesdb.NewAudioFileStore(ctx, db.DB)
 	if err != nil {

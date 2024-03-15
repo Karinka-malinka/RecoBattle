@@ -53,13 +53,11 @@ func NewRouter(cfg config.ApiServer, handlers []handler.Handler, ua *userapp.Use
 			return &userapp.JWTCustomClaims{}
 		},
 		SigningKey: []byte(cfg.SecretKeyForAccessToken),
-		/*
-			ErrorHandler: func(c echo.Context, err error) error {
-				return r.TokenRefresher(c, cfg)
-			},
-			ContinueOnIgnoredError: true,
-			TokenLookup:            "header:Authorization:Bearer ,cookie:access_token",
-		*/
+		ErrorHandler: func(c echo.Context, err error) error {
+			return r.TokenRefresher(c, cfg)
+		},
+		ContinueOnIgnoredError: true,
+		TokenLookup:            "header:Authorization:Bearer ,cookie:access_token",
 	}
 
 	privateGroup.Use(echojwt.WithConfig(restrictedConfig))

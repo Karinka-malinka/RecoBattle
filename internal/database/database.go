@@ -4,7 +4,11 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/sirupsen/logrus"
 )
 
 type PostgresDatabase struct {
@@ -18,27 +22,20 @@ func NewDB(ctx context.Context, ps string) (*PostgresDatabase, error) {
 		return nil, err
 	}
 
-	/*
-			_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS shorten (
-		        "uuid" TEXT PRIMARY KEY,
-				"user_id" TEXT,
-				"original_url" TEXT,
-		        "short_url" TEXT,
-				"correlation_id" TEXT,
-				"is_deleted" BOOLEAN DEFAULT false,
-				UNIQUE (original_url, correlation_id),
-				FOREIGN KEY (user_id) REFERENCES users(uuid)
-		      )`)
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		logrus.Fatal("Error when creating the driver:", err)
+	}
 
-			if err != nil {
-				return nil, err
-			}
+	m, err := migrate.NewWithDatabaseInstance("file://../migrations", "postgres", driver)
+	if err != nil {
+		logrus.Fatal("Error initializing migrations:", err)
+	}
 
-			_, err = db.ExecContext(ctx, "CREATE INDEX IF NOT EXISTS ix_original_url ON shorten (original_url)")
-			if err != nil {
-				return nil, err
-			}
-	*/
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		logrus.Fatal("Error during migration:", err)
+	}
 
 	d := PostgresDatabase{DB: db}
 

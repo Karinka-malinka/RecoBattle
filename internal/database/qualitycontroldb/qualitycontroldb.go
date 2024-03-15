@@ -20,18 +20,6 @@ type QualityControlStore struct {
 
 func NewQCStore(ctx context.Context, db *sql.DB) (*QualityControlStore, error) {
 
-	_, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS quality_control (
-		"uuid" TEXT PRIMARY KEY,
-		"file_id" TEXT,
-		"channel_tag" TEXT,
-		"text" TEXT,
-		FOREIGN KEY (file_id) REFERENCES audiofiles(file_id)
-	  )`)
-
-	if err != nil {
-		return nil, err
-	}
-
 	return &QualityControlStore{db: db}, nil
 }
 

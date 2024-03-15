@@ -21,43 +21,6 @@ type AudioFileStore struct {
 
 func NewAudioFileStore(ctx context.Context, db *sql.DB) (*AudioFileStore, error) {
 
-	_, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS audiofiles (
-		"file_id" TEXT PRIMARY KEY,
-		"file_name" TEXT,
-		"user_id" TEXT,
-		"uploaded_at" TIMESTAMP,
-		FOREIGN KEY (user_id) REFERENCES users(uuid)
-	  )`)
-
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS asr (
-		"uuid" TEXT PRIMARY KEY,
-		"file_id" TEXT,
-		"asr" TEXT,
-		"status" TEXT,
-		FOREIGN KEY (file_id) REFERENCES audiofiles(file_id)
-	  )`)
-
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS result_asr (
-		"uuid" TEXT,
-		"channel_tag" TEXT,
-		"text" TEXT,
-		"start_time" REAL,
-		"end_time" REAL,
-		FOREIGN KEY (uuid) REFERENCES asr(uuid)
-	  )`)
-
-	if err != nil {
-		return nil, err
-	}
-
 	return &AudioFileStore{db: db}, nil
 }
 

@@ -48,10 +48,13 @@ func (ct ServiceASRYandex) TextFromASRModel(data []byte) (string, error) {
 	req.Header.Add("Authorization", fmt.Sprintf("Api-Key %s", ct.cnf.YandexKey))
 
 	response, err := ct.client.Do(req)
+
 	if err != nil {
 		logrus.Errorf("error in doing request to Yandex ASR. error: %v", err)
 		return "", err
 	}
+
+	defer response.Body.Close()
 
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {

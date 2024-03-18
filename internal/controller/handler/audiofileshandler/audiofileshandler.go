@@ -30,7 +30,7 @@ func NewAudioFilesHandler(audioFilesApp *audiofilesapp.AudioFiles, asrRegistry *
 	return &AudioFilesHandler{AudioFilesApp: audioFilesApp, ASRRegistry: asrRegistry, PathFileStorage: pathFileStorage}
 }
 
-func (lh *AudioFilesHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {
+func (lh *AudioFilesHandler) RegisterHandler(_ *echo.Echo, _, privateGroup *echo.Group) {
 
 	privateGroup.POST("/asr/audiofile", lh.SetAudioFile)
 	privateGroup.GET("/asr/audiofiles", lh.GetAudioFiles)
@@ -68,7 +68,10 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	userID := handler.GetUserID(c)
+	userID, err := handler.GetUserID(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized)
+	}
 
 	asr, ok := lh.ASRRegistry.GetService(audioFile.ASR)
 	if !ok {
@@ -81,13 +84,13 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		UserID:   userID,
 	}
 
-	go func() error {
+	go func() {
 
 		filePath := lh.PathFileStorage + audioFile.FileName
 		file, err := os.Create(filePath)
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		defer file.Close()
@@ -95,28 +98,26 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		_, err = io.WriteString(file, audioFile.Audio)
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		data, err := os.ReadFile(filePath)
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		newAudioFile.FileID, err = lh.AudioFilesApp.Create(c.Request().Context(), newAudioFile)
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		go lh.AudioFilesApp.AddASRProcessing(newAudioFile, asr, data)
 
 		ca <- true
-		return nil
-
 	}()
 
 	select {
@@ -124,7 +125,7 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		return c.String(http.StatusAccepted, "OK")
 	case err := <-errc:
 		logrus.Errorf("error: %v", err)
-		var errConflict *database.ErrConflict
+		var errConflict *database.ConflictError
 		if errors.As(err, &errConflict) {
 			return c.String(http.StatusConflict, "wav file has already been uploaded by this user")
 		}
@@ -150,18 +151,20 @@ func (lh *AudioFilesHandler) GetAudioFiles(c echo.Context) error {
 	ca := make(chan []audiofilesapp.AudioFile, 1)
 	errc := make(chan error)
 
-	userID := handler.GetUserID(c)
+	userID, err := handler.GetUserID(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized)
+	}
 
-	go func() error {
+	go func() {
 		outputData, err := lh.AudioFilesApp.GetAudioFiles(c.Request().Context(), userID)
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		ca <- *outputData
-		return nil
 	}()
 
 	select {
@@ -196,16 +199,15 @@ func (lh *AudioFilesHandler) GetResultASR(c echo.Context) error {
 
 	uuid := c.Param("uuid")
 
-	go func() error {
+	go func() {
 		outputData, err := lh.AudioFilesApp.GetResultASR(c.Request().Context(), uuid)
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		ca <- *outputData
-		return nil
 	}()
 
 	select {

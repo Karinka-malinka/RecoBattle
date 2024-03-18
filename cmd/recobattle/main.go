@@ -54,22 +54,13 @@ func main() {
 	asrRegistry.AddService("yandexSpeachKit", yandexASR)
 
 	//Init storage and services
-	userStore, err := userdb.NewUserStore(ctx, db.DB)
-	if err != nil {
-		logrus.Fatalf("error in creating user store table: " + err.Error())
-	}
+	userStore := userdb.NewUserStore(db.DB)
 	userApp := userapp.NewUser(userStore, cnf.ApiServer)
 
-	audiofileStore, err := audiofilesdb.NewAudioFileStore(ctx, db.DB)
-	if err != nil {
-		logrus.Fatalf("error in creating audiofile store table: " + err.Error())
-	}
+	audiofileStore := audiofilesdb.NewAudioFileStore(db.DB)
 	audiofilesApp := audiofilesapp.NewAudioFile(audiofileStore)
 
-	qcStore, err := qualitycontroldb.NewQCStore(ctx, db.DB)
-	if err != nil {
-		logrus.Fatalf("error in creating quality control store table: " + err.Error())
-	}
+	qcStore := qualitycontroldb.NewQCStore(db.DB)
 	qcApp := qualitycontrolapp.NewQualityControl(qcStore)
 
 	//Add Actions to Handlers to slice

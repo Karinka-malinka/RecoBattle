@@ -19,9 +19,9 @@ type AudioFileStore struct {
 	db *sql.DB
 }
 
-func NewAudioFileStore(ctx context.Context, db *sql.DB) (*AudioFileStore, error) {
+func NewAudioFileStore(db *sql.DB) *AudioFileStore {
 
-	return &AudioFileStore{db: db}, nil
+	return &AudioFileStore{db: db}
 }
 
 func (d *AudioFileStore) CreateFile(ctx context.Context, audioFile audiofilesapp.AudioFile) error {
@@ -154,7 +154,7 @@ func (d *AudioFileStore) GetResultASR(ctx context.Context, uuid string) (*[]audi
 		From("result_asr").
 		Where(squirrel.Eq{"uuid": uuid}).
 		RunWith(d.db).
-		Query()
+		QueryContext(ctx)
 
 	if err != nil {
 		return nil, err

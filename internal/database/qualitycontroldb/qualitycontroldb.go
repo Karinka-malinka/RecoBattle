@@ -18,9 +18,9 @@ type QualityControlStore struct {
 	db *sql.DB
 }
 
-func NewQCStore(ctx context.Context, db *sql.DB) (*QualityControlStore, error) {
+func NewQCStore(db *sql.DB) *QualityControlStore {
 
-	return &QualityControlStore{db: db}, nil
+	return &QualityControlStore{db: db}
 }
 
 func (d *QualityControlStore) Create(ctx context.Context, it qualitycontrolapp.IdealText) error {

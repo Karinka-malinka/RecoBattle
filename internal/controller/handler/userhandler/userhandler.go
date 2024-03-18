@@ -23,7 +23,7 @@ func NewUserHandler(userapp *userapp.Users) *UserHandler {
 	return &UserHandler{UserApp: userapp}
 }
 
-func (lh *UserHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {
+func (lh *UserHandler) RegisterHandler(_ *echo.Echo, publicGroup, _ *echo.Group) {
 
 	publicGroup.POST("/user/register", lh.Register)
 	publicGroup.POST("/user/login", lh.Login)
@@ -57,17 +57,16 @@ func (lh *UserHandler) Register(c echo.Context) error {
 		return err
 	}
 
-	go func() error {
+	go func() {
 
 		registerResult, err := lh.UserApp.Register(c.Request().Context(), userapp.User{Username: user.Username, Password: user.Password})
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		ca <- registerResult
-		return nil
 	}()
 
 	select {
@@ -75,7 +74,7 @@ func (lh *UserHandler) Register(c echo.Context) error {
 		SendResponceToken(c, result)
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
-		var errConflict *database.ErrConflict
+		var errConflict *database.ConflictError
 		if errors.As(err, &errConflict) {
 			return c.String(http.StatusConflict, "")
 		}
@@ -112,17 +111,16 @@ func (lh *UserHandler) Login(c echo.Context) error {
 		return err
 	}
 
-	go func() error {
+	go func() {
 
 		registerResult, err := lh.UserApp.Login(c.Request().Context(), userapp.User{Username: user.Username, Password: user.Password})
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		ca <- registerResult
-		return nil
 	}()
 
 	select {

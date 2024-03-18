@@ -60,7 +60,7 @@ func (ua *Users) Token(ctx context.Context, refreshToken string, cfg config.ApiS
 	}
 
 	if valid {
-		user, err := ua.userStore.GetByID(ctx, userClaims.UserID)
+		user, err := ua.userStore.GetUser(ctx, map[string]string{"uuid": userClaims.UserID})
 		if err != nil {
 			return nil, err
 		}

@@ -24,7 +24,7 @@ func NewQCHandler(qcApp *qualitycontrolapp.QualityControls) *QCHandler {
 	return &QCHandler{QCApp: qcApp}
 }
 
-func (lh *QCHandler) RegisterHandler(e *echo.Echo, publicGroup, privateGroup *echo.Group) {
+func (lh *QCHandler) RegisterHandler(_ *echo.Echo, _, privateGroup *echo.Group) {
 
 	privateGroup.POST("/qualitycontrol/ideal", lh.SetIdealText)
 	privateGroup.GET("/qualitycontrol/:id_file", lh.QualityControl)
@@ -60,18 +60,16 @@ func (lh *QCHandler) SetIdealText(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	go func() error {
+	go func() {
 
 		err = lh.QCApp.Create(c.Request().Context(), qualitycontrolapp.IdealText{FileID: idealText.FileID, ChannelTag: idealText.ChannelTag, Text: idealText.Text})
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		ca <- true
-		return nil
-
 	}()
 
 	select {
@@ -79,7 +77,7 @@ func (lh *QCHandler) SetIdealText(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	case err := <-errc:
 		logrus.Errorf("error: %v", err)
-		var errConflict *database.ErrConflict
+		var errConflict *database.ConflictError
 		if errors.As(err, &errConflict) {
 			return c.String(http.StatusConflict, "")
 		}
@@ -107,18 +105,16 @@ func (lh *QCHandler) QualityControl(c echo.Context) error {
 
 	fileID := c.Param("id_file")
 
-	go func() error {
+	go func() {
 
 		outputData, err := lh.QCApp.QualityControl(c.Request().Context(), fileID)
 
 		if err != nil {
 			errc <- err
-			return err
+			return
 		}
 
 		ca <- *outputData
-		return nil
-
 	}()
 
 	select {

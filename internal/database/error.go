@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-type ErrConflict struct {
+type ConflictError struct {
 	Err error
 }
 
 func NewErrorConflict(err error) error {
-	return &ErrConflict{Err: err}
+	return &ConflictError{Err: err}
 }
 
-func (e *ErrConflict) Error() string {
+func (e *ConflictError) Error() string {
 	return fmt.Sprintf("%v : %v", e.Err, "already exists")
 }

@@ -53,7 +53,7 @@ func NewRouter(cfg config.ApiServer, handlers []handler.Handler, ua *userapp.Use
 			return &userapp.JWTCustomClaims{}
 		},
 		SigningKey: []byte(cfg.SecretKeyForAccessToken),
-		ErrorHandler: func(c echo.Context, err error) error {
+		ErrorHandler: func(c echo.Context, _ error) error {
 			return r.TokenRefresher(c, cfg)
 		},
 		ContinueOnIgnoredError: true,

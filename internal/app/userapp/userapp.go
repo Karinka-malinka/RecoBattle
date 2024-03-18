@@ -21,8 +21,7 @@ type User struct {
 
 type UserStore interface {
 	Create(ctx context.Context, user User) error
-	GetByName(ctx context.Context, username string) (*User, error)
-	GetByID(ctx context.Context, userID string) (*User, error)
+	GetUser(ctx context.Context, condition map[string]string) (*User, error)
 }
 
 type Users struct {
@@ -61,7 +60,7 @@ func (ua *Users) Register(ctx context.Context, user User) (*LoginResponse, error
 
 func (ua *Users) Login(ctx context.Context, user User) (*LoginResponse, error) {
 
-	userInDB, err := ua.userStore.GetByName(ctx, user.Username)
+	userInDB, err := ua.userStore.GetUser(ctx, map[string]string{"login": user.Username})
 
 	if err != nil {
 		return nil, err

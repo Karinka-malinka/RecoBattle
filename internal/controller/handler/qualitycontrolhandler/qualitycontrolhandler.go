@@ -7,7 +7,7 @@ import (
 	"github.com/RecoBattle/internal/app/qualitycontrolapp"
 	"github.com/RecoBattle/internal/database"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 )
 
 type QCHandler struct {
@@ -51,12 +51,12 @@ func (lh *QCHandler) SetIdealText(c echo.Context) error {
 	idealText := new(RequestData)
 	err := c.Bind(idealText)
 	if err != nil {
-		logrus.Errorf("error in bind ideal text request. error: %v", err)
+		log.Errorf("error in bind ideal text request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := c.Validate(idealText); err != nil {
-		logrus.Errorf("error in bind ideal text  request. error: %v", err)
+		log.Errorf("error in bind ideal text  request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -76,7 +76,7 @@ func (lh *QCHandler) SetIdealText(c echo.Context) error {
 	case <-ca:
 		return c.String(http.StatusOK, "OK")
 	case err := <-errc:
-		logrus.Errorf("error: %v", err)
+		log.Errorf("error: %v", err)
 		var errConflict *database.ConflictError
 		if errors.As(err, &errConflict) {
 			return c.String(http.StatusConflict, "")
@@ -124,7 +124,7 @@ func (lh *QCHandler) QualityControl(c echo.Context) error {
 		}
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
-		logrus.Errorf("error: %v", err)
+		log.Errorf("error: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	case <-c.Request().Context().Done():
 		return nil

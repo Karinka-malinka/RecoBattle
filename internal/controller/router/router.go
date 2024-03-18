@@ -6,7 +6,6 @@ import (
 	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/RecoBattle/internal/controller/handler"
-	"github.com/RecoBattle/internal/controller/handler/userhandler"
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt/v4"
 	echojwt "github.com/labstack/echo-jwt"
@@ -86,7 +85,7 @@ func (rt *Router) TokenRefresher(c echo.Context, cfg config.ApiServer) error {
 		return c.String(http.StatusInternalServerError, "")
 	}
 
-	userhandler.SendResponceToken(c, tokenResponse)
+	handler.SendResponceToken(c, tokenResponse)
 
 	return nil
 }

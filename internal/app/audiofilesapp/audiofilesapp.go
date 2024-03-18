@@ -10,7 +10,7 @@ import (
 
 	"github.com/RecoBattle/internal/app/asr"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 )
 
 const (
@@ -79,20 +79,20 @@ func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []
 
 	audiofile.UUID = uuid.New()
 	if err := af.audioFileStore.CreateASR(ctx, audiofile); err != nil {
-		logrus.Error(err.Error())
+		log.Error(err.Error())
 		return
 	}
 
 	time.Sleep(30 * time.Second)
 
 	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSING); err != nil {
-		logrus.Error(err.Error())
+		log.Error(err.Error())
 		return
 	}
 
 	result, err := asr.TextFromASRModel(data)
 	if err != nil {
-		logrus.Errorf("error in sending request to ASR. error: %#v", result)
+		log.Errorf("error in sending request to ASR. error: %#v", result)
 		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
 			return
 		}
@@ -106,7 +106,7 @@ func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []
 	}
 
 	if err := af.audioFileStore.CreateResultASR(ctx, resASR); err != nil {
-		logrus.Errorf("error in writing the ASR result. error: %v", err)
+		log.Errorf("error in writing the ASR result. error: %v", err)
 		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
 			return
 		}
@@ -114,7 +114,7 @@ func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []
 	}
 
 	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSED); err != nil {
-		logrus.Error(err.Error())
+		log.Error(err.Error())
 		return
 	}
 

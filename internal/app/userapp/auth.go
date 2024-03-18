@@ -8,7 +8,7 @@ import (
 
 	"github.com/RecoBattle/cmd/config"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 )
 
 type JWTCustomClaims struct {
@@ -27,7 +27,7 @@ func (ua *Users) newToken(user User, tokenExpiresAt uint, SecretKeyForToken stri
 
 	tokenString, err := token.SignedString([]byte(SecretKeyForToken))
 	if err != nil {
-		logrus.Errorf("error in signedString access token. error: %v", err)
+		log.Errorf("error in signedString access token. error: %v", err)
 		return "", err
 	}
 
@@ -36,10 +36,6 @@ func (ua *Users) newToken(user User, tokenExpiresAt uint, SecretKeyForToken stri
 
 func (ua *Users) getTokensWithClaims(user User, tokenExpiresAt uint) (token *jwt.Token) {
 
-	currentTime := time.Now()
-	ExpTime := currentTime.Add(time.Duration(tokenExpiresAt) * time.Minute)
-
-	logrus.Infof("Current time: %+v\n ExpTime: %+v", currentTime, ExpTime)
 	tokenClaims := &JWTCustomClaims{
 		UserID: user.UUID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -90,7 +86,7 @@ func parseToken(tokenstr, secretKey string) (bool, *JWTCustomClaims, error) {
 
 	if err != nil {
 		if !errors.Is(err, jwt.ErrTokenExpired) {
-			logrus.Infof("error in parsing token. error: %v", err)
+			log.Infof("error in parsing token. error: %v", err)
 			return false, nil, err
 		}
 	}

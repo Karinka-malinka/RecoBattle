@@ -5,9 +5,10 @@ import (
 	"net/http"
 
 	"github.com/RecoBattle/internal/app/userapp"
+	"github.com/RecoBattle/internal/controller/handler"
 	"github.com/RecoBattle/internal/database"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 )
 
 type UserHandler struct {
@@ -48,12 +49,12 @@ func (lh *UserHandler) Register(c echo.Context) error {
 	user := new(RegisterRequest)
 	err := c.Bind(user)
 	if err != nil {
-		logrus.Errorf("error in bind register User request. error: %v", err)
+		log.Errorf("error in bind register User request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := c.Validate(user); err != nil {
-		logrus.Errorf("error in bind register User request. error: %v", err)
+		log.Errorf("error in bind register User request. error: %v", err)
 		return err
 	}
 
@@ -71,7 +72,7 @@ func (lh *UserHandler) Register(c echo.Context) error {
 
 	select {
 	case result := <-ca:
-		SendResponceToken(c, result)
+		handler.SendResponceToken(c, result)
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
 		var errConflict *database.ConflictError
@@ -102,12 +103,12 @@ func (lh *UserHandler) Login(c echo.Context) error {
 	user := new(RegisterRequest)
 	err := c.Bind(user)
 	if err != nil {
-		logrus.Errorf("error in bind register User request. error: %v", err)
+		log.Errorf("error in bind register User request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := c.Validate(user); err != nil {
-		logrus.Errorf("error in bind register User request. error: %v", err)
+		log.Errorf("error in bind register User request. error: %v", err)
 		return err
 	}
 
@@ -125,7 +126,7 @@ func (lh *UserHandler) Login(c echo.Context) error {
 
 	select {
 	case result := <-ca:
-		SendResponceToken(c, result)
+		handler.SendResponceToken(c, result)
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
 		if err.Error() == "401" {
@@ -136,38 +137,4 @@ func (lh *UserHandler) Login(c echo.Context) error {
 		return nil
 	}
 
-}
-
-func SendResponceToken(c echo.Context, response *userapp.LoginResponse) {
-
-	c.Response().Header().Set("Authorization", "Bearer "+response.AccessToken)
-
-	writeAccessTokenCookie(c, response.AccessToken)
-	writeRefreshTokenCookie(c, response.RefreshToken)
-}
-
-func writeAccessTokenCookie(c echo.Context, accessToken string) {
-
-	cookie := new(http.Cookie)
-
-	cookie.Name = "access_token"
-	cookie.Value = accessToken
-	cookie.HttpOnly = true
-	cookie.SameSite = 3
-	cookie.Path = "/"
-
-	c.SetCookie(cookie)
-}
-
-func writeRefreshTokenCookie(c echo.Context, refreshToken string) {
-
-	cookie := new(http.Cookie)
-
-	cookie.Name = "refresh_token"
-	cookie.Value = refreshToken
-	cookie.HttpOnly = true
-	cookie.SameSite = 3
-	cookie.Path = "/"
-
-	c.SetCookie(cookie)
 }

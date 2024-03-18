@@ -1,18 +1,18 @@
 package logger
 
-import "github.com/sirupsen/logrus"
+import (
+	"log/slog"
+	"os"
+)
 
 func SetUpLogger() {
-	logrus.SetReportCaller(true)
-	logrus.SetFormatter(&logrus.JSONFormatter{
-		PrettyPrint:      true,
-		DisableTimestamp: false,
-		TimestampFormat:  "2006-01-02 15:04:05",
-		FieldMap: logrus.FieldMap{
-			logrus.FieldKeyTime:  "@timestamp",
-			logrus.FieldKeyLevel: "severity",
-			logrus.FieldKeyMsg:   "message",
-			logrus.FieldKeyFunc:  "caller",
-		},
-	})
+
+	opts := &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+
+	slog.SetDefault(logger)
 }

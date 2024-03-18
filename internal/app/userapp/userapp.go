@@ -7,10 +7,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/RecoBattle/cmd/config"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type User struct {
@@ -89,7 +89,7 @@ func (ua *Users) checkHash(user User, userHash string) bool {
 	check2, err := hex.DecodeString(userHash)
 
 	if err != nil {
-		logrus.Printf("Error in decode user hash. error: %v\n", err)
+		log.Printf("Error in decode user hash. error: %v\n", err)
 	}
 
 	return hmac.Equal(check2, check1)

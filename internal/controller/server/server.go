@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,12 +32,12 @@ func (s *Server) Start(ctx context.Context) {
 	errs, _ := errgroup.WithContext(ctx)
 
 	errs.Go(s.srv.ListenAndServe)
-
-	logrus.Infof("server started: %s", s.srv.Addr)
+	log.Printf("server started: %s", s.srv.Addr)
+	//logrus.Infof("server started: %s", s.srv.Addr)
 
 	err := errs.Wait()
 	if err != nil {
-		logrus.Infof("message from server: %v", err)
+		log.Printf("message from server: %v", err)
 	}
 }
 
@@ -45,7 +45,7 @@ func (s *Server) Stop(ctx context.Context) {
 
 	err := s.srv.Shutdown(ctx)
 	if err != nil {
-		logrus.Errorf("server shutdown with error: %v", err)
+		log.Infof("server shutdown with error: %v", err)
 	}
-	logrus.Infof("Server is graceful shutdown...")
+	log.Infof("Server is graceful shutdown...")
 }

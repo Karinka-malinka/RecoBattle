@@ -11,7 +11,7 @@ import (
 	"github.com/RecoBattle/internal/controller/handler"
 	"github.com/RecoBattle/internal/database"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 )
 
 type AudioFilesHandler struct {
@@ -59,12 +59,12 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 	audioFile := new(RequestData)
 	err := c.Bind(audioFile)
 	if err != nil {
-		logrus.Errorf("error in bind audio file request. error: %v", err)
+		log.Errorf("error in bind audio file request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := c.Validate(audioFile); err != nil {
-		logrus.Errorf("error in bind audio file  request. error: %v", err)
+		log.Errorf("error in bind audio file  request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -124,7 +124,7 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 	case <-ca:
 		return c.String(http.StatusAccepted, "OK")
 	case err := <-errc:
-		logrus.Errorf("error: %v", err)
+		log.Errorf("error: %v", err)
 		var errConflict *database.ConflictError
 		if errors.As(err, &errConflict) {
 			return c.String(http.StatusConflict, "wav file has already been uploaded by this user")
@@ -174,7 +174,7 @@ func (lh *AudioFilesHandler) GetAudioFiles(c echo.Context) error {
 		}
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
-		logrus.Errorf("error: %v", err)
+		log.Errorf("error: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	case <-c.Request().Context().Done():
 		return nil
@@ -217,7 +217,7 @@ func (lh *AudioFilesHandler) GetResultASR(c echo.Context) error {
 		}
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:
-		logrus.Errorf("error: %v", err)
+		log.Errorf("error: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	case <-c.Request().Context().Done():
 		return nil

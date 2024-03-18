@@ -3,7 +3,7 @@ package asr
 import (
 	"sync"
 
-	"github.com/sirupsen/logrus"
+	"github.com/labstack/gommon/log"
 )
 
 type ASR interface {
@@ -22,11 +22,11 @@ func (asrRegistry *ASRRegistry) AddService(name string, service ASR) {
 
 	_, exists := asrRegistry.Services[name]
 	if exists {
-		logrus.Infof("Service [%s] already exists, skipping...\n", name)
+		log.Infof("Service [%s] already exists, skipping...\n", name)
 		return
 	}
 	asrRegistry.Services[name] = service
-	logrus.Infof("Service [%s] registered.\n", name)
+	log.Infof("Service [%s] registered", name)
 }
 
 func (asrRegistry *ASRRegistry) GetService(name string) (ASR, bool) {

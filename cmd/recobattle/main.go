@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/RecoBattle/internal/database/qualitycontroldb"
 	"github.com/RecoBattle/internal/database/userdb"
 	"github.com/RecoBattle/internal/logger"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 
 	cnf, err := cfg.GetConfig(cfg.ConfigASR)
 	if err != nil {
-		logrus.Fatalf("cnf is not set. Error: %v", err)
+		log.Fatalf("cnf is not set. Error: %v", err)
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -44,7 +44,7 @@ func main() {
 
 	db, err := database.NewDB(ctx, cfg.DatabaseDSN)
 	if err != nil {
-		logrus.Fatalf("error in open database. error: %v", err)
+		log.Fatalf("error in open database. error: %v", err)
 	}
 
 	//Add ASR

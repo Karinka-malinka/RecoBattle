@@ -1,7 +1,6 @@
 package userhandler
 
 import (
-	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -14,31 +13,16 @@ import (
 	"github.com/RecoBattle/internal/controller/handler"
 	"github.com/RecoBattle/internal/controller/router"
 	"github.com/RecoBattle/internal/database"
+	"github.com/RecoBattle/internal/database/mocks"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type MockUserStore struct {
-	mock.Mock
-}
-
 var registeredHandlers []handler.Handler
 
 const ConfigASR = "../../../../cmd/config/config.toml"
-
-func (m *MockUserStore) Create(ctx context.Context, user userapp.User) error {
-	user.UUID = uuid.MustParse("2d53b244-8844-40a6-ab37-e5b89019af0a")
-
-	args := m.Called(ctx, user)
-	return args.Error(0)
-}
-
-func (m *MockUserStore) GetUser(ctx context.Context, condition map[string]string) (*userapp.User, error) {
-	args := m.Called(ctx, condition)
-	return args.Get(0).(*userapp.User), args.Error(1)
-}
 
 func TestUserHandler_Register(t *testing.T) {
 
@@ -61,7 +45,7 @@ func TestUserHandler_Register(t *testing.T) {
 
 	t.Run("Successful Registration", func(t *testing.T) {
 
-		mockUserStore := new(MockUserStore)
+		mockUserStore := new(mocks.MockUserStore)
 
 		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
 		userHandler := NewUserHandler(userApp)
@@ -85,7 +69,7 @@ func TestUserHandler_Register(t *testing.T) {
 
 	t.Run("Conflict", func(t *testing.T) {
 
-		mockUserStore := new(MockUserStore)
+		mockUserStore := new(mocks.MockUserStore)
 
 		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
 		userHandler := NewUserHandler(userApp)
@@ -111,7 +95,7 @@ func TestUserHandler_Register(t *testing.T) {
 
 		reqBody := `{"login": "testuser", "pass": "testpassword"}`
 
-		mockUserStore := new(MockUserStore)
+		mockUserStore := new(mocks.MockUserStore)
 
 		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
 		userHandler := NewUserHandler(userApp)
@@ -154,7 +138,7 @@ func TestUserHandler_Login(t *testing.T) {
 
 	t.Run("Invalid username/password pair", func(t *testing.T) {
 
-		mockUserStore := new(MockUserStore)
+		mockUserStore := new(mocks.MockUserStore)
 
 		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
 		userHandler := NewUserHandler(userApp)
@@ -178,7 +162,7 @@ func TestUserHandler_Login(t *testing.T) {
 
 	t.Run("Successful Login", func(t *testing.T) {
 
-		mockUserStore := new(MockUserStore)
+		mockUserStore := new(mocks.MockUserStore)
 
 		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
 		userHandler := NewUserHandler(userApp)

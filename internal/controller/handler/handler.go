@@ -6,7 +6,6 @@ import (
 
 	"github.com/RecoBattle/internal/app/userapp"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,15 +20,12 @@ func GetUserID(c echo.Context) (string, error) {
 	user := c.Get("user")
 
 	if user != nil {
-		u := user.(*jwt.Token)
-		claims := u.Claims.(*userapp.JWTCustomClaims)
-		userID = claims.UserID
-		return userID, nil
-	} else {
-		u := c.Get("userID").(uuid.UUID)
-		if u != uuid.Nil {
-			return u.String(), nil
+		if u, ok := user.(*jwt.Token); ok {
+			claims := u.Claims.(*userapp.JWTCustomClaims)
+			userID = claims.UserID
+			return userID, nil
 		}
+		return "", fmt.Errorf("no token")
 	}
 
 	return "", fmt.Errorf("no token")

@@ -53,24 +53,24 @@ func (lh *AudioFilesHandler) RegisterHandler(_ *echo.Echo, _, privateGroup *echo
 //	@Security JWT Token
 func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 
+	userID, err := handler.GetUserID(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized)
+	}
+
 	ca := make(chan bool)
 	errc := make(chan error)
 
 	audioFile := new(RequestData)
-	err := c.Bind(audioFile)
+	err = c.Bind(audioFile)
 	if err != nil {
 		log.Errorf("error in bind audio file request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := c.Validate(audioFile); err != nil {
-		log.Errorf("error in bind audio file  request. error: %v", err)
+		log.Errorf("error in validate audio file  request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	userID, err := handler.GetUserID(c)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
 
 	asr, ok := lh.ASRRegistry.GetService(audioFile.ASR)
@@ -213,7 +213,7 @@ func (lh *AudioFilesHandler) GetResultASR(c echo.Context) error {
 	select {
 	case result := <-ca:
 		if len(result) == 0 {
-			return c.String(http.StatusNoContent, "No content")
+			return echo.NewHTTPError(http.StatusNoContent)
 		}
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:

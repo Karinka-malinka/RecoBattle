@@ -83,8 +83,6 @@ func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []
 		return
 	}
 
-	time.Sleep(30 * time.Second)
-
 	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSING); err != nil {
 		log.Error(err.Error())
 		return

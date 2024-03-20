@@ -28,21 +28,13 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var registeredHandlers []handler.Handler
-
 const ConfigASR = "../../../../cmd/config/config.toml"
 const PathTestFile = "../../../../testfile/test.wav"
 const userID = "2d53b244-8844-40a6-ab37-e5b89019af0a"
 
-/*
-type Config struct {
-	userApp     userapp.Users
-	cnf         config.ApiServer
-	asrRegistry asr.ASRRegistry
-}
-*/
-
 func getEchoContext(mockAudioFileStore *mocks.MockAudioFileStore, reqBody string) (echo.Context, *AudioFilesHandler) {
+
+	var registeredHandlers []handler.Handler
 
 	cfg := config.NewConfig()
 

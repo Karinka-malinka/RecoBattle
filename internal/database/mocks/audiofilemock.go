@@ -40,7 +40,7 @@ func (m *MockAudioFileStore) GetAudioFiles(ctx context.Context, userID string) (
 }
 
 func (m *MockAudioFileStore) GetResultASR(ctx context.Context, uuid string) (*[]audiofilesapp.ResultASR, error) {
-	uuid = "2d53b244-8844-40a6-ab37-e5b89019af0a"
-	args := m.Called(ctx, uuid)
+	id := "2d53b244-8844-40a6-ab37-e5b89019af0a"
+	args := m.Called(ctx, id)
 	return args.Get(0).(*[]audiofilesapp.ResultASR), args.Error(1)
 }

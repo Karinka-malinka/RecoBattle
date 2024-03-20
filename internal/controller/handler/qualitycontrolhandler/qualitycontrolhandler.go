@@ -56,7 +56,7 @@ func (lh *QCHandler) SetIdealText(c echo.Context) error {
 	}
 
 	if err := c.Validate(idealText); err != nil {
-		log.Errorf("error in bind ideal text  request. error: %v", err)
+		log.Errorf("error in validate ideal text  request. error: %v", err)
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

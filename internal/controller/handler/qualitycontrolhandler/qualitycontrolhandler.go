@@ -120,7 +120,7 @@ func (lh *QCHandler) QualityControl(c echo.Context) error {
 	select {
 	case result := <-ca:
 		if len(result) == 0 {
-			return c.String(http.StatusNoContent, "No content")
+			return echo.NewHTTPError(http.StatusNoContent)
 		}
 		return c.JSON(http.StatusOK, result)
 	case err := <-errc:

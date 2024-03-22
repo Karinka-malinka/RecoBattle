@@ -26,6 +26,7 @@ import (
 const ConfigASR = "../../../../cmd/config/config.toml"
 const PathTestFile = "../../../../testfile/test.wav"
 const userID = "2d53b244-8844-40a6-ab37-e5b89019af0a"
+const fileID = "1d35b422-7755-50a7-ab73-e4b98091af1a"
 
 func getEchoContext(mockQCStore *mocks.MockQualityControlStore, reqBody string) (echo.Context, *QCHandler) {
 
@@ -48,7 +49,7 @@ func getEchoContext(mockQCStore *mocks.MockQualityControlStore, reqBody string) 
 
 	e := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp).Echo
 
-	req := httptest.NewRequest(http.MethodPost, "/api_private/asr/audiofile", strings.NewReader(reqBody))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(reqBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -63,6 +64,10 @@ func getEchoContext(mockQCStore *mocks.MockQualityControlStore, reqBody string) 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims)
 	c.Set("user", token)
 
+	c.SetPath("/api_private/qualitycontrol/:id_file")
+	c.SetParamNames("id_file")
+	c.SetParamValues(fileID)
+
 	return c, qcHandler
 }
 
@@ -72,7 +77,7 @@ func TestQCHandler_SetIdealText(t *testing.T) {
 
 	qualityControl := qualitycontrolapp.IdealText{
 		UUID:       ID,
-		FileID:     "2d53b244-8844-40a6-ab37-e5b89019af0a",
+		FileID:     fileID,
 		ChannelTag: "1",
 		Text:       "Hi",
 	}
@@ -92,7 +97,7 @@ func TestQCHandler_SetIdealText(t *testing.T) {
 
 	t.Run("Successful", func(t *testing.T) {
 
-		reqBody = `{"id_file": "2d53b244-8844-40a6-ab37-e5b89019af0a", "ChannelTag": "1", "Text":"Hi"}`
+		reqBody = `{"id_file": "` + fileID + `", "ChannelTag": "1", "Text":"Hi"}`
 		c, qcHandler = getEchoContext(mockQCStore, reqBody)
 
 		if assert.NoError(t, qcHandler.SetIdealText(c)) {
@@ -105,12 +110,51 @@ func TestQCHandler_SetIdealText(t *testing.T) {
 
 		mockQCStore := new(mocks.MockQualityControlStore)
 		mockQCStore.On("Create", mock.Anything, qualityControl).Return(database.NewErrorConflict(errors.New("409")))
-		reqBody = `{"id_file": "2d53b244-8844-40a6-ab37-e5b89019af0a", "ChannelTag": "1", "Text":"Hi"}`
+		reqBody = `{"id_file": "` + fileID + `", "ChannelTag": "1", "Text":"Hi"}`
 		c, qcHandler = getEchoContext(mockQCStore, reqBody)
 
 		if assert.NoError(t, qcHandler.SetIdealText(c)) {
 			assert.Equal(t, http.StatusConflict, c.Response().Status)
 		}
+	})
+}
+
+func TestQCHandler_QualityControl(t *testing.T) {
+
+	var data []qualitycontrolapp.QualityControl
+
+	t.Run("No content", func(t *testing.T) {
+
+		mockQCStore := new(mocks.MockQualityControlStore)
+		mockQCStore.On("GetTextASRIdeal", mock.Anything, fileID).Return(data, "Hi", nil)
+
+		c, qcHandler := getEchoContext(mockQCStore, "")
+
+		err := qcHandler.QualityControl(c)
+		assert.Error(t, err)
+		httpError := err.(*echo.HTTPError)
+		assert.Equal(t, http.StatusNoContent, httpError.Code)
+	})
+
+	resASR := qualitycontrolapp.QualityControl{
+		ASR:       "yandexSpeachKit",
+		TestIdeal: "Hi",
+		TextASR:   "Hi",
+		Quality:   90,
+	}
+	data = append(data, resASR)
+
+	t.Run("Successful", func(t *testing.T) {
+
+		mockQCStore := new(mocks.MockQualityControlStore)
+		mockQCStore.On("GetTextASRIdeal", mock.Anything, fileID).Return(data, "Hi", nil)
+
+		c, qcHandler := getEchoContext(mockQCStore, "")
+
+		if assert.NoError(t, qcHandler.QualityControl(c)) {
+			assert.Equal(t, http.StatusOK, c.Response().Status)
+		}
+
 	})
 
 }

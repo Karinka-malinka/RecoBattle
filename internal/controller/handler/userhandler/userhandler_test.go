@@ -20,11 +20,12 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var registeredHandlers []handler.Handler
-
 const ConfigASR = "../../../../cmd/config/config.toml"
+const userID = "2d53b244-8844-40a6-ab37-e5b89019af0a"
 
-func TestUserHandler_Register(t *testing.T) {
+func getEchoContext(mockUserStore *mocks.MockUserStore, reqBody string) (echo.Context, *UserHandler) {
+
+	var registeredHandlers []handler.Handler
 
 	cfg := config.NewConfig()
 
@@ -33,9 +34,26 @@ func TestUserHandler_Register(t *testing.T) {
 		log.Fatalf("cnf is not set. Error: %v", err)
 	}
 
+	userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
+	userHandler := NewUserHandler(userApp)
+
+	registeredHandlers = append(registeredHandlers, userHandler)
+
+	e := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp).Echo
+
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(reqBody))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	return c, userHandler
+}
+
+func TestUserHandler_Register(t *testing.T) {
+
 	reqBody := `{"login": "testuser", "password": "testpassword"}`
 
-	userID := uuid.MustParse("2d53b244-8844-40a6-ab37-e5b89019af0a")
+	userID := uuid.MustParse(userID)
 
 	user := &userapp.User{
 		UUID:     userID,
@@ -43,26 +61,27 @@ func TestUserHandler_Register(t *testing.T) {
 		Password: "cff17119871bdcd21a5638b1134ec1bcc9be47e0ce3bcd9863a2a24a68c862b5",
 	}
 
+	mockUserStore := new(mocks.MockUserStore)
+	mockUserStore.On("Create", mock.Anything, *user).Return(nil)
+
+	t.Run("Bad request", func(t *testing.T) {
+
+		reqBody := `{"login": "testuser", "pass": "testpassword"}`
+
+		c, userHandler := getEchoContext(mockUserStore, reqBody)
+
+		err := userHandler.Register(c)
+		assert.Error(t, err)
+		httpError := err.(*echo.HTTPError)
+		assert.Equal(t, http.StatusBadRequest, httpError.Code)
+	})
+
 	t.Run("Successful Registration", func(t *testing.T) {
 
-		mockUserStore := new(mocks.MockUserStore)
-
-		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
-		userHandler := NewUserHandler(userApp)
-
-		registeredHandlers = append(registeredHandlers, userHandler)
-
-		e := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp).Echo
-
-		req := httptest.NewRequest(http.MethodPost, "/user/register", strings.NewReader(reqBody))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
-		mockUserStore.On("Create", mock.Anything, *user).Return(nil)
+		c, userHandler := getEchoContext(mockUserStore, reqBody)
 
 		if assert.NoError(t, userHandler.Register(c)) {
-			assert.Equal(t, http.StatusOK, rec.Code)
+			assert.Equal(t, http.StatusOK, c.Response().Status)
 		}
 
 	})
@@ -70,66 +89,23 @@ func TestUserHandler_Register(t *testing.T) {
 	t.Run("Conflict", func(t *testing.T) {
 
 		mockUserStore := new(mocks.MockUserStore)
-
-		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
-		userHandler := NewUserHandler(userApp)
-
-		registeredHandlers = append(registeredHandlers, userHandler)
-
-		e := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp).Echo
-
-		req := httptest.NewRequest(http.MethodPost, "/user/register", strings.NewReader(reqBody))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
 		mockUserStore.On("Create", mock.Anything, *user).Return(database.NewErrorConflict(errors.New("409")))
 
+		c, userHandler := getEchoContext(mockUserStore, reqBody)
+
 		if assert.NoError(t, userHandler.Register(c)) {
-			assert.Equal(t, http.StatusConflict, rec.Code)
+			assert.Equal(t, http.StatusConflict, c.Response().Status)
 		}
 
 	})
 
-	t.Run("Bad request", func(t *testing.T) {
-
-		reqBody := `{"login": "testuser", "pass": "testpassword"}`
-
-		mockUserStore := new(mocks.MockUserStore)
-
-		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
-		userHandler := NewUserHandler(userApp)
-
-		registeredHandlers = append(registeredHandlers, userHandler)
-
-		e := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp).Echo
-
-		req := httptest.NewRequest(http.MethodPost, "/user/register", strings.NewReader(reqBody))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
-		mockUserStore.On("Create", mock.Anything, *user).Return(nil)
-
-		err := userHandler.Register(c)
-		assert.Error(t, err)
-		httpError := err.(*echo.HTTPError)
-		assert.Equal(t, http.StatusBadRequest, httpError.Code)
-	})
 }
 
 func TestUserHandler_Login(t *testing.T) {
 
-	cfg := config.NewConfig()
-
-	cnf, err := cfg.GetConfig(ConfigASR)
-	if err != nil {
-		log.Fatalf("cnf is not set. Error: %v", err)
-	}
-
 	reqBody := `{"login": "testuser", "password": "testpassword"}`
 
-	userID := uuid.MustParse("2d53b244-8844-40a6-ab37-e5b89019af0a")
+	userID := uuid.MustParse(userID)
 	user := &userapp.User{
 		UUID:     userID,
 		Username: "testuser",
@@ -139,23 +115,12 @@ func TestUserHandler_Login(t *testing.T) {
 	t.Run("Invalid username/password pair", func(t *testing.T) {
 
 		mockUserStore := new(mocks.MockUserStore)
-
-		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
-		userHandler := NewUserHandler(userApp)
-
-		registeredHandlers = append(registeredHandlers, userHandler)
-
-		e := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp).Echo
-
-		req := httptest.NewRequest(http.MethodPost, "/user/login", strings.NewReader(reqBody))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
 		mockUserStore.On("GetUser", mock.Anything, mock.Anything).Return(&userapp.User{}, errors.New("401"))
 
+		c, userHandler := getEchoContext(mockUserStore, reqBody)
+
 		if assert.NoError(t, userHandler.Login(c)) {
-			assert.Equal(t, http.StatusUnauthorized, rec.Code)
+			assert.Equal(t, http.StatusUnauthorized, c.Response().Status)
 		}
 
 	})
@@ -163,23 +128,12 @@ func TestUserHandler_Login(t *testing.T) {
 	t.Run("Successful Login", func(t *testing.T) {
 
 		mockUserStore := new(mocks.MockUserStore)
-
-		userApp := userapp.NewUser(mockUserStore, cnf.ApiServer)
-		userHandler := NewUserHandler(userApp)
-
-		registeredHandlers = append(registeredHandlers, userHandler)
-
-		e := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp).Echo
-
-		req := httptest.NewRequest(http.MethodPost, "/user/login", strings.NewReader(reqBody))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
 		mockUserStore.On("GetUser", mock.Anything, map[string]string{"login": "testuser"}).Return(user, nil)
 
+		c, userHandler := getEchoContext(mockUserStore, reqBody)
+
 		if assert.NoError(t, userHandler.Login(c)) {
-			assert.Equal(t, http.StatusOK, rec.Code)
+			assert.Equal(t, http.StatusOK, c.Response().Status)
 		}
 
 	})

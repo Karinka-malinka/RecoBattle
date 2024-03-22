@@ -20,5 +20,5 @@ func (m *MockQualityControlStore) Create(ctx context.Context, qualityControl qua
 
 func (m *MockQualityControlStore) GetTextASRIdeal(ctx context.Context, fileID string) ([]qualitycontrolapp.QualityControl, string, error) {
 	args := m.Called(ctx, fileID)
-	return args.Get(0).([]qualitycontrolapp.QualityControl), args.Get(0).(string), args.Error(2)
+	return args.Get(0).([]qualitycontrolapp.QualityControl), args.Get(1).(string), args.Error(2)
 }

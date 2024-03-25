@@ -50,7 +50,7 @@ func (ua *Users) getTokensWithClaims(user User, tokenExpiresAt uint) (token *jwt
 
 func (ua *Users) Token(ctx context.Context, refreshToken string, cfg config.ApiServer) (*LoginResponse, error) {
 
-	valid, userClaims, err := parseToken(refreshToken, cfg.SecretKeyForRefreshToken)
+	valid, userClaims, err := ParseToken(refreshToken, cfg.SecretKeyForRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (ua *Users) Token(ctx context.Context, refreshToken string, cfg config.ApiS
 	return nil, errors.New("401")
 }
 
-func parseToken(tokenstr, secretKey string) (bool, *JWTCustomClaims, error) {
+func ParseToken(tokenstr, secretKey string) (bool, *JWTCustomClaims, error) {
 
 	token, err := jwt.ParseWithClaims(tokenstr, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/labstack/gommon/log"
-	"golang.org/x/sync/errgroup"
 )
 
 type Server struct {
@@ -27,23 +26,22 @@ func NewServer(addr string, h http.Handler) *Server {
 	return s
 }
 
-func (s *Server) Start(ctx context.Context) {
+func (s *Server) Start() {
 
-	errs, _ := errgroup.WithContext(ctx)
+	go func() {
+		err := s.srv.ListenAndServe()
+		log.Printf("error server started: %v", err)
+	}()
 
-	errs.Go(s.srv.ListenAndServe)
 	log.Printf("server started: %s", s.srv.Addr)
-	//logrus.Infof("server started: %s", s.srv.Addr)
-
-	err := errs.Wait()
-	if err != nil {
-		log.Printf("message from server: %v", err)
-	}
 }
 
 func (s *Server) Stop(ctx context.Context) {
 
-	err := s.srv.Shutdown(ctx)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(time.Second*2))
+	defer cancel()
+
+	err := s.srv.Shutdown(timeoutCtx)
 	if err != nil {
 		log.Infof("server shutdown with error: %v", err)
 	}

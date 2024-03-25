@@ -10,7 +10,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/asr"
@@ -21,7 +20,6 @@ import (
 	"github.com/RecoBattle/internal/controller/router"
 	"github.com/RecoBattle/internal/database"
 	"github.com/RecoBattle/internal/database/mocks"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -64,15 +62,7 @@ func getEchoContext(mockAudioFileStore *mocks.MockAudioFileStore, reqBody string
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	tokenClaims := &userapp.JWTCustomClaims{
-		UserID: userID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cnf.ApiServer.AccessTokenExpiresAt) * time.Minute)),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims)
-	c.Set("user", token)
+	c.Set("user", userID)
 
 	return c, audiofilesHandler
 }
@@ -132,7 +122,7 @@ func TestAudioFilesHandler_SetAudioFile(t *testing.T) {
 
 	t.Run("Unauthorized", func(t *testing.T) {
 
-		c.Set("user", nil)
+		c.Set("user", "")
 		err := audiofilesHandler.SetAudioFile(c)
 		assert.Error(t, err)
 		httpError := err.(*echo.HTTPError)

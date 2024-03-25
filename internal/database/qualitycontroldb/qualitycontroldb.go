@@ -25,14 +25,7 @@ func NewQCStore(db *sql.DB) *QualityControlStore {
 
 func (d *QualityControlStore) Create(ctx context.Context, it qualitycontrolapp.IdealText) error {
 
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
-	_, err = tx.ExecContext(ctx, "INSERT INTO quality_control (uuid, file_id, channel_tag, text) VALUES($1,$2,$3,$4)", it.UUID.String(), it.FileID, it.ChannelTag, it.Text)
+	_, err := d.db.ExecContext(ctx, "INSERT INTO quality_control (uuid, file_id, channel_tag, text) VALUES($1,$2,$3,$4)", it.UUID.String(), it.FileID, it.ChannelTag, it.Text)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -43,7 +36,7 @@ func (d *QualityControlStore) Create(ctx context.Context, it qualitycontrolapp.I
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (d *QualityControlStore) GetTextASRIdeal(ctx context.Context, fileID string) ([]qualitycontrolapp.QualityControl, string, error) {

@@ -26,14 +26,7 @@ func NewAudioFileStore(db *sql.DB) *AudioFileStore {
 
 func (d *AudioFileStore) CreateFile(ctx context.Context, audioFile audiofilesapp.AudioFile) error {
 
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
-	_, err = tx.ExecContext(ctx, "INSERT INTO audiofiles (file_id, file_name, user_id, uploaded_at) VALUES($1,$2,$3,$4)", audioFile.FileID, audioFile.FileName, audioFile.UserID, time.Now())
+	_, err := d.db.ExecContext(ctx, "INSERT INTO audiofiles (file_id, file_name, user_id, uploaded_at) VALUES($1,$2,$3,$4)", audioFile.FileID, audioFile.FileName, audioFile.UserID, time.Now())
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -44,25 +37,18 @@ func (d *AudioFileStore) CreateFile(ctx context.Context, audioFile audiofilesapp
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (d *AudioFileStore) CreateASR(ctx context.Context, audioFile audiofilesapp.AudioFile) error {
 
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
-	_, err = tx.ExecContext(ctx, "INSERT INTO asr (uuid, file_id, asr, status) VALUES($1,$2,$3,$4)", audioFile.UUID.String(), audioFile.FileID, audioFile.ASR, audiofilesapp.StatusNEW)
+	_, err := d.db.ExecContext(ctx, "INSERT INTO asr (uuid, file_id, asr, status) VALUES($1,$2,$3,$4)", audioFile.UUID.String(), audioFile.FileID, audioFile.ASR, audiofilesapp.StatusNEW)
 
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (d *AudioFileStore) UpdateStatusASR(ctx context.Context, audioFileUUID, status string) error {
@@ -85,21 +71,14 @@ func (d *AudioFileStore) UpdateStatusASR(ctx context.Context, audioFileUUID, sta
 
 func (d *AudioFileStore) CreateResultASR(ctx context.Context, resultASR audiofilesapp.ResultASR) error {
 
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
-	_, err = tx.ExecContext(ctx, "INSERT INTO result_asr (uuid, channel_tag, text, start_time, end_time) VALUES($1,$2,$3,$4,$5)",
+	_, err := d.db.ExecContext(ctx, "INSERT INTO result_asr (uuid, channel_tag, text, start_time, end_time) VALUES($1,$2,$3,$4,$5)",
 		resultASR.UUID.String(), resultASR.ChannelTag, resultASR.Text, resultASR.StartTime, resultASR.EndTime)
 
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (d *AudioFileStore) GetAudioFiles(ctx context.Context, userID string) (*[]audiofilesapp.AudioFile, error) {

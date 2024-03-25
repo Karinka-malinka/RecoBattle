@@ -47,11 +47,19 @@ func NewRouter(cfg config.ApiServer, handlers []handler.Handler, ua *userapp.Use
 	publicGroup := e.Group("/api_public")
 	privateGroup := e.Group("/api_private")
 
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("secretKeyForToken", cfg.SecretKeyForAccessToken)
+			return next(c)
+		}
+	})
+
 	restrictedConfig := echojwt.Config{
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return &userapp.JWTCustomClaims{}
 		},
-		SigningKey: []byte(cfg.SecretKeyForAccessToken),
+		SigningKey:     []byte(cfg.SecretKeyForAccessToken),
+		ParseTokenFunc: ParseToken,
 		ErrorHandler: func(c echo.Context, _ error) error {
 			return r.TokenRefresher(c, cfg)
 		},
@@ -88,4 +96,26 @@ func (rt *Router) TokenRefresher(c echo.Context, cfg config.ApiServer) error {
 	handler.SendResponceToken(c, tokenResponse)
 
 	return nil
+}
+
+func SecretKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		c.Set("secretKey", "your-secret-key-here")
+		return next(c)
+	}
+}
+
+func ParseToken(c echo.Context, auth string) (interface{}, error) {
+
+	secretKey := c.Get("secretKeyForToken")
+
+	_, userClaims, err := userapp.ParseToken(auth, secretKey.(string))
+
+	if err != nil {
+		return nil, err
+	}
+
+	c.Set("user", userClaims.UserID)
+
+	return true, nil
 }

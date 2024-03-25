@@ -42,10 +42,11 @@ func main() {
 
 	defer cancel()
 
-	db, err := database.NewDB(ctx, cfg.DatabaseDSN)
+	db, err := database.NewDB(cfg.DatabaseDSN)
 	if err != nil {
 		log.Fatalf("error in open database. error: %v", err)
 	}
+	defer db.Close()
 
 	//Add ASR
 	asrRegistry := asr.ASRRegistry{Services: make(map[string]asr.ASR)}
@@ -54,13 +55,13 @@ func main() {
 	asrRegistry.AddService("yandexSpeachKit", yandexASR)
 
 	//Init storage and services
-	userStore := userdb.NewUserStore(db.DB)
+	userStore := userdb.NewUserStore(db)
 	userApp := userapp.NewUser(userStore, cnf.ApiServer)
 
-	audiofileStore := audiofilesdb.NewAudioFileStore(db.DB)
+	audiofileStore := audiofilesdb.NewAudioFileStore(db)
 	audiofilesApp := audiofilesapp.NewAudioFile(audiofileStore)
 
-	qcStore := qualitycontroldb.NewQCStore(db.DB)
+	qcStore := qualitycontroldb.NewQCStore(db)
 	qcApp := qualitycontrolapp.NewQualityControl(qcStore)
 
 	//Add Actions to Handlers to slice
@@ -78,7 +79,7 @@ func main() {
 	appRouter := router.NewRouter(cnf.ApiServer, registeredHandlers, userApp)
 	appServer := server.NewServer(cfg.RunAddr, appRouter.Echo)
 
-	go appServer.Start(ctx)
+	go appServer.Start()
 
 	<-ctx.Done()
 	appServer.Stop(ctx)

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/RecoBattle/internal/app/userapp"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 )
 
@@ -15,20 +14,13 @@ type Handler interface {
 
 func GetUserID(c echo.Context) (string, error) {
 
-	var userID string
+	userID := c.Get("user").(string)
 
-	user := c.Get("user")
-
-	if user != nil {
-		if u, ok := user.(*jwt.Token); ok {
-			claims := u.Claims.(*userapp.JWTCustomClaims)
-			userID = claims.UserID
-			return userID, nil
-		}
-		return "", fmt.Errorf("no token")
+	if userID == "" {
+		return "", fmt.Errorf("no user id")
 	}
 
-	return "", fmt.Errorf("no token")
+	return userID, nil
 }
 
 func SendResponceToken(c echo.Context, response *userapp.LoginResponse) {

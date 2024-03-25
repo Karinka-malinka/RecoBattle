@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/RecoBattle/cmd/config"
 	"github.com/RecoBattle/internal/app/qualitycontrolapp"
@@ -16,7 +15,6 @@ import (
 	"github.com/RecoBattle/internal/controller/router"
 	"github.com/RecoBattle/internal/database"
 	"github.com/RecoBattle/internal/database/mocks"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -54,15 +52,7 @@ func getEchoContext(mockQCStore *mocks.MockQualityControlStore, reqBody string) 
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	tokenClaims := &userapp.JWTCustomClaims{
-		UserID: userID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cnf.ApiServer.AccessTokenExpiresAt) * time.Minute)),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, tokenClaims)
-	c.Set("user", token)
+	c.Set("user", userID)
 
 	c.SetPath("/api_private/qualitycontrol/:id_file")
 	c.SetParamNames("id_file")

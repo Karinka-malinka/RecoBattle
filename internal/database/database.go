@@ -1,8 +1,8 @@
 package database
 
 import (
-	"context"
 	"database/sql"
+	"errors"
 	"log"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -11,11 +11,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type PostgresDatabase struct {
-	DB *sql.DB
-}
-
-func NewDB(ctx context.Context, ps string) (*PostgresDatabase, error) {
+func NewDB(ps string) (*sql.DB, error) {
 
 	db, err := sql.Open("pgx", ps)
 	if err != nil {
@@ -32,16 +28,12 @@ func NewDB(ctx context.Context, ps string) (*PostgresDatabase, error) {
 		log.Fatal("Error initializing migrations:", err)
 	}
 
+	defer m.Close()
+
 	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if errors.Is(err, migrate.ErrNoChange) {
 		log.Fatal("Error during migration:", err)
 	}
 
-	d := PostgresDatabase{DB: db}
-
-	return &d, nil
-}
-
-func (d *PostgresDatabase) Close() error {
-	return d.DB.Close()
+	return db, nil
 }

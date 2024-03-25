@@ -27,14 +27,7 @@ func NewUserStore(db *sql.DB) *UserStore {
 
 func (d *UserStore) Create(ctx context.Context, user userapp.User) error {
 
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
-	_, err = tx.ExecContext(ctx, "INSERT INTO users (uuid, login, hash_pass) VALUES($1,$2,$3)", user.UUID.String(), user.Username, user.Password)
+	_, err := d.db.ExecContext(ctx, "INSERT INTO users (uuid, login, hash_pass) VALUES($1,$2,$3)", user.UUID.String(), user.Username, user.Password)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -45,7 +38,7 @@ func (d *UserStore) Create(ctx context.Context, user userapp.User) error {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (d *UserStore) GetUser(ctx context.Context, condition map[string]string) (*userapp.User, error) {

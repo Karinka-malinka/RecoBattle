@@ -108,6 +108,8 @@ func TestAudioFilesHandler_SetAudioFile(t *testing.T) {
 	}
 
 	audioBase64 := base64.StdEncoding.EncodeToString(data)
+	audioFile.Data = data
+
 	reqBody = fmt.Sprintf(`{"asr": "yandexSpeachKit", "file_name": "testfile.wav", "audio":"%s"}`, audioBase64)
 
 	c, audiofilesHandler = getEchoContext(mockAudioFileStore, reqBody)

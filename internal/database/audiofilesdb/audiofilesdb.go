@@ -42,7 +42,7 @@ func (d *AudioFileStore) CreateFile(ctx context.Context, audioFile audiofilesapp
 
 func (d *AudioFileStore) CreateASR(ctx context.Context, audioFile audiofilesapp.AudioFile) error {
 
-	_, err := d.db.ExecContext(ctx, "INSERT INTO asr (uuid, file_id, asr, status) VALUES($1,$2,$3,$4)", audioFile.UUID.String(), audioFile.FileID, audioFile.ASR, audiofilesapp.StatusNEW)
+	_, err := d.db.ExecContext(ctx, "INSERT INTO asr (uuid, file_id, asr, status) VALUES($1,$2,$3,$4)", audioFile.UUID.String(), audioFile.FileID, audioFile.ASR, audiofilesapp.StatusPROCESSING)
 
 	if err != nil {
 		return err

@@ -12,6 +12,7 @@ import (
 	"github.com/RecoBattle/internal/database"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
+	"golang.org/x/sync/errgroup"
 )
 
 type AudioFilesHandler struct {
@@ -53,13 +54,15 @@ func (lh *AudioFilesHandler) RegisterHandler(_ *echo.Echo, _, privateGroup *echo
 //	@Security JWT Token
 func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 
+	ctx := c.Request().Context()
+
 	userID, err := handler.GetUserID(c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized)
 	}
 
 	ca := make(chan bool)
-	errc := make(chan error)
+	inputAudiofile := make(chan audiofilesapp.AudioFile, 1)
 
 	audioFile := new(RequestData)
 	err = c.Bind(audioFile)
@@ -78,59 +81,60 @@ func (lh *AudioFilesHandler) SetAudioFile(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnprocessableEntity, "")
 	}
 
+	go lh.AudioFilesApp.AddASRProcessing(ctx, asr, inputAudiofile)
+
 	newAudioFile := audiofilesapp.AudioFile{
 		FileName: audioFile.FileName,
 		ASR:      audioFile.ASR,
 		UserID:   userID,
 	}
 
-	go func() {
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
 
 		filePath := lh.PathFileStorage + audioFile.FileName
-		file, err := os.Create(filePath)
-		if err != nil {
-			errc <- err
-			return
+		if file, err := os.Create(filePath); err != nil {
+			return err
+		} else {
+			defer file.Close()
+			if _, err = io.WriteString(file, audioFile.Audio); err != nil {
+				return err
+			}
 		}
 
-		defer file.Close()
-
-		_, err = io.WriteString(file, audioFile.Audio)
-		if err != nil {
-			errc <- err
-			return
+		if data, err := os.ReadFile(filePath); err != nil {
+			return err
+		} else {
+			newAudioFile.Data = data
 		}
 
-		data, err := os.ReadFile(filePath)
-
+		newAudioFile.FileID, err = lh.AudioFilesApp.Create(ctx, newAudioFile)
 		if err != nil {
-			errc <- err
-			return
+			return err
 		}
 
-		newAudioFile.FileID, err = lh.AudioFilesApp.Create(c.Request().Context(), newAudioFile)
-
-		if err != nil {
-			errc <- err
-			return
-		}
-
-		go lh.AudioFilesApp.AddASRProcessing(newAudioFile, asr, data)
-
+		inputAudiofile <- newAudioFile
 		ca <- true
-	}()
 
-	select {
-	case <-ca:
-		return c.String(http.StatusAccepted, "OK")
-	case err := <-errc:
+		close(inputAudiofile)
+		close(ca)
+
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
 		log.Errorf("error: %v", err)
 		var errConflict *database.ConflictError
 		if errors.As(err, &errConflict) {
 			return c.String(http.StatusConflict, "wav file has already been uploaded by this user")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	case <-c.Request().Context().Done():
+	}
+
+	select {
+	case <-ca:
+		return c.String(http.StatusAccepted, "OK")
+	case <-ctx.Done():
 		return nil
 	}
 }

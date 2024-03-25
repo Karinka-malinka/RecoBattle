@@ -33,6 +33,7 @@ type AudioFile struct {
 	Status     string    `json:"status"`
 	UploadedAt time.Time `json:"uploaded_at"`
 	UserID     string    `json:"-"`
+	Data       []byte    `json:"-"`
 }
 
 type ResultASR struct {
@@ -73,49 +74,60 @@ func (af *AudioFiles) Create(ctx context.Context, audiofile AudioFile) (string, 
 	return audiofile.FileID, nil
 }
 
-func (af *AudioFiles) AddASRProcessing(audiofile AudioFile, asr asr.ASR, data []byte) {
+func (af *AudioFiles) AddASRProcessing(ctx context.Context, asr asr.ASR, inputAudiofile <-chan AudioFile) {
 
-	ctx := context.Background()
+	for {
+		select {
+		case audiofile, ok := <-inputAudiofile:
+			if !ok {
+				return
+			}
 
-	audiofile.UUID = uuid.New()
-	if err := af.audioFileStore.CreateASR(ctx, audiofile); err != nil {
-		log.Error(err.Error())
-		return
-	}
+			audiofile.UUID = uuid.New()
+			if err := af.audioFileStore.CreateASR(ctx, audiofile); err != nil {
+				log.Error(err.Error())
+				//outputCh <- err
+				return
+			}
 
-	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSING); err != nil {
-		log.Error(err.Error())
-		return
-	}
+			result, err := asr.TextFromASRModel(audiofile.Data)
+			if err != nil {
+				log.Errorf("error in sending request to ASR. error: %#v", result)
+				if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
+					//outputCh <- err
+					return
+				}
+				//outputCh <- err
+				return
+			}
 
-	result, err := asr.TextFromASRModel(data)
-	if err != nil {
-		log.Errorf("error in sending request to ASR. error: %#v", result)
-		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
+			resASR := ResultASR{
+				UUID:       audiofile.UUID,
+				ChannelTag: "1",
+				Text:       result,
+			}
+
+			if err := af.audioFileStore.CreateResultASR(ctx, resASR); err != nil {
+				log.Errorf("error in writing the ASR result. error: %v", err)
+				if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
+					//outputCh <- err
+					return
+				}
+				//outputCh <- err
+				return
+			}
+
+			if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSED); err != nil {
+				log.Error(err.Error())
+				//outputCh <- err
+				return
+			}
+
+		case <-ctx.Done():
+			log.Error(ctx.Err())
 			return
 		}
-		return
 	}
-
-	resASR := ResultASR{
-		UUID:       audiofile.UUID,
-		ChannelTag: "1",
-		Text:       result,
-	}
-
-	if err := af.audioFileStore.CreateResultASR(ctx, resASR); err != nil {
-		log.Errorf("error in writing the ASR result. error: %v", err)
-		if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusINVALID); err != nil {
-			return
-		}
-		return
-	}
-
-	if err := af.audioFileStore.UpdateStatusASR(ctx, audiofile.UUID.String(), StatusPROCESSED); err != nil {
-		log.Error(err.Error())
-		return
-	}
-
 }
 
 func (af *AudioFiles) GetAudioFiles(ctx context.Context, userID string) (*[]AudioFile, error) {

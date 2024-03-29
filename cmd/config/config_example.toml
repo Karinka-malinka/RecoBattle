@@ -1,0 +1,13 @@
+[ApiServer]
+SecretKeyForAccessToken="X7k3OFLHXq"
+SecretKeyForRefreshToken="~wj61cEru0W^~o7SrkWzX"
+SecretKeyForHashingPassword="qLmqBnI{qgN4yX3]YY0$tMEAL"
+AccessTokenExpiresAt=5 #in minutes
+RefreshTokenExpiresAt=60 #in minutes
+
+[YandexAsr]
+YandexKey = "AQVN3HrK1Bt7nlaKofcK5sNj-40Lra_tUIn_S14t"
+YandexFolderId = "b1gld4ucahta378c2puu"
+YandexAsrUri = "https://stt.api.cloud.yandex.net/speech/v1/stt:recognize"
+Format = "lpcm"
+SampleRateHertz = "8000"
